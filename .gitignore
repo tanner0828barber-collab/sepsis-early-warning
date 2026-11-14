@@ -1,0 +1,17 @@
+# Python environment and caches
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.pytest_cache/
+
+# The patient data is never committed. The notebook downloads it from PhysioNet.
+data/
+*.psv
+stacked.pkl
+
+# Local only
+.DS_Store
+.gradio/
+flagged/
+.env
