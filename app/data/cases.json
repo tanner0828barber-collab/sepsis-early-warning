@@ -1,0 +1,34 @@
+{
+  "site": "Hospital B",
+  "source": "B",
+  "cases": [
+    {
+      "label": "Typical catch",
+      "pid": "p100218",
+      "rule": "the caught patient whose warning time is closest to the median (5 hours)",
+      "outcome": "caught",
+      "sepsis": true
+    },
+    {
+      "label": "One we miss",
+      "pid": "p100072",
+      "rule": "the first missed sepsis patient by ID",
+      "outcome": "missed",
+      "sepsis": true
+    },
+    {
+      "label": "A false alarm",
+      "pid": "p100024",
+      "rule": "the first false alarm by ID",
+      "outcome": "false alarm",
+      "sepsis": false
+    },
+    {
+      "label": "Late entry",
+      "pid": "p100055",
+      "rule": "the first patient by ID whose sepsis label is already on in their first recorded hour",
+      "outcome": "missed",
+      "sepsis": true
+    }
+  ]
+}

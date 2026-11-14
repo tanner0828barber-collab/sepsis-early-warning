@@ -1,0 +1,187 @@
+{
+  "headline": "Trained at hospital A, frozen, then tested once at hospital B.",
+  "finding": "The official utility score fell from 0.368 at hospital A dev to 0.238 at hospital B. At hospital B the model alerted by onset on 486 of 1142 sepsis patients (43%, against 62% at A dev) and missed 656. It raised a false alarm on 1358 of 18858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A).",
+  "two_hospitals": {
+    "columns": [
+      "Full model (M3)",
+      "Hospital A dev",
+      "Hospital B"
+    ],
+    "rows": [
+      [
+        "Official utility score (0 is never alerting, 1 is perfect)",
+        "0.368<br><span class=\"range\">0.325 to 0.409</span>",
+        "0.238<br><span class=\"range\">0.214 to 0.262</span>"
+      ],
+      [
+        "Sepsis patients caught (first alert in the 12 hours before onset)",
+        "60 of 358<br><span class=\"range\">17%</span>",
+        "109 of 1142<br><span class=\"range\">10%</span>"
+      ],
+      [
+        "Alerted very early (more than 12 hours before onset)",
+        "162 of 358",
+        "377 of 1142"
+      ],
+      [
+        "Sepsis patients missed (no alert by onset)",
+        "136 of 358",
+        "656 of 1142"
+      ],
+      [
+        "False alarms (patients who never developed sepsis, alerted at least once)",
+        "556 of 3710<br>15% <span class=\"range\">14% to 16%</span>",
+        "1358 of 18858<br>7% <span class=\"range\">7% to 8%</span>"
+      ],
+      [
+        "Alerts per 1,000 patient-days",
+        "232",
+        "115"
+      ],
+      [
+        "Median hours of warning (patients alerted by onset)",
+        "31 hours",
+        "41 hours"
+      ]
+    ],
+    "caption": "The threshold was set once on hospital A dev at a 15% alert budget and never changed. Gray ranges are 95% ranges from a bootstrap that resamples patients 1,000 times. Hospital A dev is 4,068 patients the model did not train on. Hospital B is 20,000 patients from a different hospital, scored once."
+  },
+  "models": {
+    "columns": [
+      "Method",
+      "Utility at A dev",
+      "Utility at B",
+      "Alerted by onset at B",
+      "Missed at B",
+      "False alarms at B"
+    ],
+    "rows": [
+      [
+        "Never alert",
+        "0.000",
+        "0.000",
+        "0 of 1142 (0%)",
+        "1142",
+        "0 of 18858 (0.0%)"
+      ],
+      [
+        "Modified SIRS rule (two or more of four checks)",
+        "0.090",
+        "-0.014",
+        "966 of 1142 (85%)",
+        "176",
+        "12630 of 18858 (67.0%)"
+      ],
+      [
+        "T0: hours in the unit only",
+        "0.312",
+        "0.242",
+        "425 of 1142 (37%)",
+        "717",
+        "2581 of 18858 (13.7%)"
+      ],
+      [
+        "M1: body signals and trends",
+        "0.197",
+        "0.091",
+        "317 of 1142 (28%)",
+        "825",
+        "994 of 18858 (5.3%)"
+      ],
+      [
+        "M2: M1 plus time",
+        "0.367",
+        "0.247",
+        "502 of 1142 (44%)",
+        "640",
+        "1452 of 18858 (7.7%)"
+      ],
+      [
+        "M3: M2 plus measurement signals (the full model)",
+        "0.368",
+        "0.238",
+        "486 of 1142 (43%)",
+        "656",
+        "1358 of 18858 (7.2%)"
+      ]
+    ],
+    "caption": "Each model's threshold was set on hospital A dev at the same 15% budget, then applied unchanged to hospital B. The gap between M2 and M3 shows how much the model leans on what was measured and when. That is a care pattern, not a cause."
+  },
+  "travel_attempts": {
+    "columns": [
+      "Attempt",
+      "Utility at A dev",
+      "Utility at B",
+      "Alerted by onset at B",
+      "Missed at B",
+      "False alarms at B"
+    ],
+    "rows": [
+      [
+        "Main result: frozen score cutoff from hospital A",
+        "0.368",
+        "0.238",
+        "486 of 1142 (43%)",
+        "656",
+        "1358 of 18858 (7.2%)"
+      ],
+      [
+        "Label-free adjustment: alert on the same share of all patients as at A dev",
+        "0.368",
+        "0.270",
+        "629 of 1142 (55%)",
+        "513",
+        "3229 of 18858 (17.1%)"
+      ],
+      [
+        "Label-free adjustment: values rescaled by each hospital's own average and spread",
+        "0.368",
+        "0.246",
+        "513 of 1142 (45%)",
+        "629",
+        "1656 of 18858 (8.8%)"
+      ]
+    ],
+    "caption": "The two adjustments use hospital B's measurements and scores but never its sepsis labels. They were planned before the hospital B run and are reported whether or not they helped."
+  },
+  "proof": [
+    {
+      "big": "486 of 1142",
+      "what": "sepsis patients alerted at or before onset",
+      "where": "Hospital B, 20,000 patients it never trained on"
+    },
+    {
+      "big": "41 hours",
+      "what": "median warning before onset",
+      "where": "Hospital B, among the 486 patients alerted by onset"
+    },
+    {
+      "big": "7.2%",
+      "what": "of patients who never developed sepsis got an alert",
+      "where": "Hospital B: 1,358 of 18,858 patients"
+    }
+  ],
+  "warning_chart": {
+    "labels": [
+      "0 to 2",
+      "3 to 5",
+      "6 to 8",
+      "9 to 12",
+      "13 to 24",
+      "25 to 48",
+      "over 48"
+    ],
+    "counts": [
+      26,
+      44,
+      15,
+      24,
+      66,
+      95,
+      216
+    ],
+    "title": "Half of the alerted sepsis patients got 41 hours of warning or more",
+    "source": "Source: Hospital B, 486 sepsis patients with an alert at or before onset. Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
+  },
+  "prediction_box": "<b>Before running this, the prediction was:</b> the utility score goes down at hospital B, false alarms go above the 15% budget (low confidence), and the full model M3 loses more than the body-signals model M1 when it travels. Committed on Sat 11/14/2026 at 2:20 PM Phoenix time, before any model was trained (first commit in the repository).<br><br><b>What happened:</b> The official utility score fell from 0.368 at hospital A dev to 0.238 at hospital B. At hospital B the model alerted by onset on 486 of 1142 sepsis patients (43%, against 62% at A dev) and missed 656. It raised a false alarm on 1358 of 18858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A)."
+}

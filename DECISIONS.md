@@ -82,6 +82,7 @@ All numbers are 3-fold cross-validation on 16,268 fit and tune patients (1,432 w
 - Sat 11/14, 3:07 PM. On dev, M2 (no measurement signals) scores utility 0.367 and M3 scores 0.368. At hospital A the measurement signals add almost nothing to utility. M1 (body signals only) scores 0.197 and T0 (time only) 0.312.
 - Sat 11/14, 3:10 PM. Tanner asked for an outside review by a second AI tool (ChatGPT in Codex) and chose to freeze and run hospital B now, with any further improvement to come after. Consequence, agreed before the run: any change to the model made after the hospital B run is after-the-fact, gets labeled that way, and can never replace the frozen main result. The reviewer is barred from using hospital B for any experiment.
 - Sat 11/14, 3:11 PM. FROZEN. results/frozen.json holds the settings, the 100 inputs, and every threshold, all set on hospital A. M3 alert line: set on dev at the 15% budget. Also frozen in advance for the one run: T0, M1, M2, the modified SIRS rule, the 5%, 10% and 20% budgets, and two label-free travel attempts (same share of all patients alerted, and values rescaled by each hospital's own average and spread).
+- Sat 11/14, 3:13 PM. THE ONE HOSPITAL B RUN done (commit deb692a). Numbers frozen. See "Result vs prediction" at the bottom.
 
 ## Why no new outside data
 
@@ -89,4 +90,19 @@ The other open intensive care datasets either need a credentialed application th
 
 ## Result vs prediction
 
-PENDING until after the one hospital B run.
+The one hospital B run finished at 3:13 PM on Sat 11/14 (commit deb692a), using the models and thresholds frozen at 3:10 PM (commit c3fbed6). Hospital B: 20,000 patients, 1,142 with sepsis.
+
+| Prediction | What happened | Verdict |
+|---|---|---|
+| 1. Utility goes down, by a third to a half | 0.368 at A dev to 0.238 at B (95% range 0.214 to 0.262). A drop of 35% | Right |
+| 2. False alarms go above the 15% budget (low confidence) | 1,358 of 18,858, which is 7.2%. Half the budget, not more | Wrong |
+| 3. M3 loses more than M1 when it travels | M3 utility 0.368 to 0.238 (down 35%). M1 0.197 to 0.091 (down 54%). Alerted by onset: M3 62% to 43%, M1 53% to 28% | Mostly wrong. M3 lost a little more utility in absolute terms (0.130 against 0.106), but M1 lost more of what it had and more catches |
+
+What we did not predict:
+- The model got quieter at hospital B, not noisier. Scores ran lower there, so the frozen alert line was crossed less often, for sepsis patients as well. Catches by onset fell from 222 of 358 (62%) to 486 of 1,142 (43%).
+- Time alone matched the full model. T0 scored utility 0.242 at B and M3 scored 0.238.
+- Alerting on the same share of all patients as at A dev (a label-free adjustment) brought catches by onset back to 55% (629 of 1,142) at a 17.1% false alarm rate, utility 0.270.
+- Late-entry cases: M3 caught 14 of 223. The modified SIRS rule caught 150 of 223.
+- The modified SIRS rule at B: alerted by onset on 966 of 1,142, false alarms on 12,630 of 18,858 (67%), utility -0.014.
+
+Why we think prediction 2 was wrong: PENDING, Tanner's read after the five failures.
