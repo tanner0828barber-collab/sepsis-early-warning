@@ -29,10 +29,10 @@ Sat 11/14, 2:20 PM. Tanner read the evidence summary and the prediction below an
 - Sat 11/14, 2:22 PM. Hospital A cut by patient with seed 2026: 13,827 fit, 2,441 tune, 4,068 dev. Each pile is 8.8% sepsis patients. Saved to splits/hospital_A_piles.csv.
 - Sat 11/14, 2:22 PM. Dropped the EtCO2 column. It is empty in 100.0% of hospital A rows, so a model trained there can learn nothing from it. Three other columns are over 99% empty at A (direct bilirubin, troponin, fibrinogen) and are kept, because the model accepts empty cells.
 - Sat 11/14, 2:22 PM. Trends are computed for the seven vital signs only: change over 6 hours, plus the mean, lowest and highest measured value in the last 6 hours. Labs are too sparse for trends.
-- Sat 11/14, 2:25 PM. Found by looking at hospital A: every sepsis patient has between 6 and 10 positive rows, so records stop a few hours after onset. A record ending is not something the model can see.
-- Sat 11/14, 2:30 PM. Settings search fixed before running it: six candidates in src/train.py, checked every 50 trees up to 600. Judged on the tune pile by the share of sepsis patients alerted at or before onset, at the 15% budget. Rule: take the best score, and among candidates within 1 percentage point of it keep the smallest model. Reason for the tie rule: the tune pile has 215 sepsis patients, so small differences are noise, and a smaller model is less likely to have memorized hospital A.
-- Sat 11/14, 2:30 PM. Modified SIRS uses the latest known value of each input, carried forward however old. A value never measured counts as "does not hold."
-- Sat 11/14, 2:30 PM. A sepsis patient alerted only after onset counts as missed. We keep a separate count of those.
+- Sat 11/14, 2:21 PM. Found by looking at hospital A: every sepsis patient has between 6 and 10 positive rows, so records stop a few hours after onset. A record ending is not something the model can see.
+- Sat 11/14, 2:24 PM. Settings search fixed before running it: six candidates in src/train.py, checked every 50 trees up to 600. Judged on the tune pile by the share of sepsis patients alerted at or before onset, at the 15% budget. Rule: take the best score, and among candidates within 1 percentage point of it keep the smallest model. Reason for the tie rule: the tune pile has 215 sepsis patients, so small differences are noise, and a smaller model is less likely to have memorized hospital A.
+- Sat 11/14, 2:24 PM. Modified SIRS uses the latest known value of each input, carried forward however old. A value never measured counts as "does not hold."
+- Sat 11/14, 2:24 PM. A sepsis patient alerted only after onset counts as missed. We keep a separate count of those.
 
 ## Why no new outside data
 
