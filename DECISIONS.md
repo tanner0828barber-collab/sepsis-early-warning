@@ -121,6 +121,14 @@ Version 1 above stays the result of record. Version 2 is "the best model we coul
   - The 15% cap A only number, 0.355 and 61.1%, matches the outside review's nested rerun (0.355, 61.1%), so the method reproduces.
   - Claude's logged guess against the result: hospital A was guessed at 0.39 to 0.42 with a gain under 0.02 (right: 0.402, gain 0.003). Hospital B was guessed at 0.30 to 0.38 (wrong: 0.406). Hospital B is not a harder hospital once the model has its data. No utility came near 0.50, so no leak flag.
   - Costs, stated plainly: at the 25% cap that is 5.2 false alarms per alerted sepsis patient at hospital B and 346 alerts per 1,000 patient-days, about three times version 1's 115.
+- Sat 11/14, 4:45 PM. PLAN, written before running: the frozen version 1 model with a per-hospital alert line at the 25% cap (script scripts/v2_alert_line_per_hospital.py). This is a second look at hospital B and is labeled that way. The model is not retrained and no hospital B sepsis label is used to set anything.
+  - Step 1, hospital A only: set the frozen model's cutoff on hospital A dev at the 25% cap, by the same rule version 1 used at 15%. Note the share of ALL hospital A dev patients alerted at that cutoff.
+  - Step 2, hospital B: take the first 2,000 hospital B patients by ID as a burn-in group. Using their scores only (no labels), find the cutoff that alerts on that same share of them. Apply it to the other 18,000 patients and score those 18,000 once.
+  - Comparison on the same 18,000 patients: hospital A's 25% cutoff applied unchanged, which is the version 1 recipe at the new cap.
+  - Claude's guess, logged in advance: the unchanged cutoff gives about 14% false alarms at B and utility near 0.26. The burn-in line gives 25% to 30% false alarms, 62% to 70% alerted by onset, and utility 0.28 to 0.32. It should land below the both-hospitals model's 0.406, because that model had hospital B's labels and this one does not.
+- Sat 11/14, 4:45 PM. PLAN, written before running: run it backwards, once (script scripts/v2_reverse.py). Train on hospital B, test on hospital A. After-the-fact. Purpose: check whether the version 1 finding (the model gets quieter when it travels) is about travel in general or about the direction A to B.
+  - Mirror of version 1: hospital B is cut by patient, 80% to train and 20% to set the cutoff (seed 2026, same share of sepsis in each). Same 100 inputs, same settings, 200 trees. Cutoffs set on the 20% at the 15% budget (the mirror of version 1) and at the 25% cap. Then all 20,336 hospital A patients are scored once. Nothing is tuned on hospital A.
+  - Claude's guess, logged in advance: the mirror image of version 1. A model raised at hospital B, where labs are rarer and blood pressures read higher, should see hospital A patients as sicker, so false alarms at A should land above the budget (25% to 40% at the 15% budget) and utility at A should be 0.25 to 0.35.
 
 ## Why no new outside data
 
