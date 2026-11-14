@@ -6,15 +6,15 @@
 About 1.7 million adults in the U.S. develop sepsis each year, and at least 350,000 die in the hospital or are discharged to hospice ([CDC](https://www.cdc.gov/sepsis/about/)). An intensive care nurse cannot study every chart every hour. Warning models exist, but each is built at one hospital. Does one still work when it moves?
 
 ## What we built
-A model that reads an intensive care patient's record hour by hour (7 vital signs, 26 labs, age, sex, hours in the unit) and alerts when its score crosses a fixed line. **The user is an intensive care nurse deciding which patient to look at first.** A replay tool plays back a real, de-identified stay and shows what the model saw each hour and when it alerted.
+I built a model that reads an intensive care patient's record hour by hour (7 vital signs, 26 labs, age, sex, hours in the unit) and alerts when its score crosses a fixed line. **The user is an intensive care nurse deciding which patient to look at first.** A replay tool plays back a real, de-identified stay and shows what the model saw each hour and when it alerted.
 Try it: `app/app.py`, steps in the [README](https://github.com/tanner0828barber-collab/sepsis-early-warning#run-it). Notebook: [sepsis_early_warning.ipynb](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/sepsis_early_warning.ipynb). Code: https://github.com/tanner0828barber-collab/sepsis-early-warning
 
 ## What we added
-Our own idea. Our user is an intensive care nurse, our data is public records from two hospitals, and our question is whether a model trained at hospital A still works at hospital B.
+Our own idea. My user is an intensive care nurse, my data is public records from two hospitals, and my question is whether a model trained at hospital A still works at hospital B.
 
 ## How it works
-**Data:** [PhysioNet / Computing in Cardiology Challenge 2019](https://physionet.org/content/challenge-2019/1.0.0/), CC BY 4.0, 40,336 patients, one row per hour. Dropped one column that is 100% empty at hospital A. Found by reading rows: records stop a few hours after sepsis onset.
-**Split:** hospital A by patient: 13,827 fit, 2,441 tune, 4,068 dev. The alert line was set once on A dev so that at most 15% of patients who never develop sepsis get an alert (so A dev numbers are calibration numbers). Everything was then frozen and hospital B (20,000 patients) was scored exactly once.
+**Data:** [PhysioNet / Computing in Cardiology Challenge 2019](https://physionet.org/content/challenge-2019/1.0.0/), CC BY 4.0, 40,336 patients, one row per hour. I dropped one column that is 100% empty at hospital A. One thing I found by reading rows: records stop a few hours after sepsis onset.
+**Split:** hospital A by patient: 13,827 fit, 2,441 tune, 4,068 dev. I set the alert line once on A dev so that at most 15% of patients who never develop sepsis get an alert (so A dev numbers are calibration numbers). I then froze everything and scored hospital B (20,000 patients) exactly once.
 **Disclosure:** hospital B is site-held-out, not blind. Its counts, age and sex mix, and sepsis rates were summarized before modeling, but no model, input, or alert line ever used it.
 **Model:** never alert (utility 0 by definition), a modified SIRS bedside rule, a model that sees only hours in the unit, then gradient boosting on 100 inputs. Each step shows what the next one adds.
 
@@ -43,7 +43,7 @@ Pattern: first-day sepsis. When the label starts before hour 24, 57 of 514 were 
 **Limits:** retrospective, and never tried by a nurse. The label is built partly from when staff ordered antibiotics and cultures, so the model partly learns hospital habits.
 
 ## What we'd do next
-Set the alert line for each hospital from its own unlabeled data (a planned first try reached 629 of 1,142 alerted by onset at 17.1% false alarms), then test at a hospital nobody has looked at.
+I would set the alert line for each hospital from its own unlabeled data (a planned first try reached 629 of 1,142 alerted by onset at 17.1% false alarms), then test at a hospital nobody has looked at.
 
 ## Sources
 Data: PhysioNet Challenge 2019, CC BY 4.0 (Reyna et al., Critical Care Medicine, 2020). Scoring: the organizers' script, unchanged (BSD 2-Clause). No pretrained models. Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio, Jupyter. Evidence behind the prediction is cited in [DECISIONS.md](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/DECISIONS.md).
