@@ -59,7 +59,9 @@ The data is not stored in this repository. The notebook downloads it from the pu
 ## Data and credits
 
 - **Data:** PhysioNet / Computing in Cardiology Challenge 2019, training sets A and B. Public, de-identified, license CC BY 4.0. https://physionet.org/content/challenge-2019/1.0.0/
-- **Challenge paper:** Reyna MA, Josef CS, Jeter R, et al. "Early Prediction of Sepsis from Clinical Data: the PhysioNet/Computing in Cardiology Challenge 2019." Critical Care Medicine, 2020.
-- **Scoring:** the challenge organizers' own scoring script, unchanged, BSD 2-Clause license, in `third_party/`.
-- **Libraries:** pandas, NumPy, scikit-learn, Matplotlib, Plotly, Gradio, Jupyter.
-- **AI tools:** Claude Code wrote most of the code from Tanner's decisions and ran the literature checks. ChatGPT (Codex) was asked for an outside review. Tanner chose the question, the user, the alert budget and the definitions, adopted the prediction before any model was trained, and decided what to keep.
+- **Challenge paper:** Reyna MA, Josef CS, Jeter R, et al. "Early Prediction of Sepsis from Clinical Data: the PhysioNet/Computing in Cardiology Challenge 2019." Critical Care Medicine, 2020. https://pmc.ncbi.nlm.nih.gov/articles/PMC6964870/
+- **Scoring:** the challenge organizers' own scoring script, unchanged, BSD 2-Clause license, in `third_party/`. Copied from https://github.com/physionetchallenges/evaluation-2019
+- **Pretrained models:** none.
+- **Libraries:** [pandas](https://pandas.pydata.org), [NumPy](https://numpy.org), [scikit-learn](https://scikit-learn.org), [Matplotlib](https://matplotlib.org), [Plotly](https://plotly.com/python/), [Gradio](https://www.gradio.app), [Jupyter](https://jupyter.org).
+- **Tutorials:** the hackathon organizers' starter notebook, sent to registered teams. It is the reason this project uses scikit-learn.
+- **AI tools:** [Claude Code](https://claude.com/claude-code) wrote most of the code from Tanner's decisions and ran the literature checks. [ChatGPT (Codex)](https://openai.com/codex/) was asked for an outside review. Tanner chose the question, the user, the alert budget and the definitions, adopted the prediction before any model was trained, and decided what to keep.

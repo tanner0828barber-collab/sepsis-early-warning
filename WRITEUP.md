@@ -46,9 +46,9 @@ Pattern: first-day sepsis. When the label starts before hour 24, 57 of 514 were 
 I would set the alert line for each hospital from its own unlabeled data (a planned first try reached 629 of 1,142 alerted by onset at 17.1% false alarms), then test at a hospital nobody has looked at.
 
 ## Sources
-Data: PhysioNet Challenge 2019, CC BY 4.0 (Reyna et al., Critical Care Medicine, 2020). Scoring: the organizers' script, unchanged (BSD 2-Clause). No pretrained models. Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio, Jupyter. Evidence behind the prediction is cited in [DECISIONS.md](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/DECISIONS.md).
+Data: PhysioNet Challenge 2019, CC BY 4.0 (Reyna et al., Critical Care Medicine, 2020). Scoring: the organizers' script, unchanged (BSD 2-Clause). No pretrained models. Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio, Jupyter. Evidence behind the prediction is cited in [DECISIONS.md](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/DECISIONS.md). Every credit with its link: [README](https://github.com/tanner0828barber-collab/sepsis-early-warning#data-and-credits).
 
 | AI tool | What it did | What I did |
 |---|---|---|
-| Claude Code | Wrote most of the code, drafted the prediction from published evidence | Chose the question, user, alert budget and definitions. Adopted the prediction before training. Decided what to keep and when to freeze |
-| ChatGPT (Codex) | Outside review of the frozen project | Asked for it, read it, acted on its findings |
+| [Claude Code](https://claude.com/claude-code) | Wrote most of the code, drafted the prediction from published evidence | Chose the question, user, alert budget and definitions. Adopted the prediction before training. Decided what to keep and when to freeze |
+| [ChatGPT (Codex)](https://openai.com/codex/) | Outside review of the frozen project | Asked for it, read it, acted on its findings |
