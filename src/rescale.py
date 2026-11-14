@@ -9,6 +9,9 @@ The attempt: express every value as "how far from this hospital's own
 average, in units of this hospital's own spread." That needs each hospital's
 measurements but not its sepsis labels.
 
+The partial clinical scores and ratios (shock index, SOFA parts and so on)
+are left alone, because their cut points are defined in real units.
+
 This is one of the planned travel attempts. It is reported as a separate,
 labeled row, never as the main result.
 """
@@ -32,7 +35,11 @@ def rescale_features(features, norms):
             continue  # never measured, or a single repeated value: leave as is
         out[f"last_{c}"] = (out[f"last_{c}"] - average) / spread
         if c in VITALS:
-            for kind in ["mean6", "min6", "max6"]:
+            for kind in ["mean6", "min6", "max6", "mean24", "min24", "max24"]:
                 out[f"{kind}_{c}"] = (out[f"{kind}_{c}"] - average) / spread
-            out[f"change6_{c}"] = out[f"change6_{c}"] / spread  # a change has no average to remove
+            # a change or a spread has no average to remove
+            out[f"change6_{c}"] = out[f"change6_{c}"] / spread
+            out[f"spread6_{c}"] = out[f"spread6_{c}"] / spread
+        else:
+            out[f"delta_{c}"] = out[f"delta_{c}"] / spread
     return out

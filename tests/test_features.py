@@ -106,6 +106,35 @@ def test_models_see_only_their_groups():
     assert "SepsisLabel" not in m3 and "pid" not in m3
     assert not any("EtCO2" in c for c in m3)
 
+    # with the added inputs: body signals join M1, measurement signals only M3
+    m1_extra = set(model_columns("M1", extra=True))
+    m3_extra = set(model_columns("M3", extra=True))
+    assert "shock_index" in m1_extra and "delta_WBC" in m1_extra
+    assert "distinct_labs_so_far" not in m1_extra and "hours_in_unit" not in m1_extra
+    assert "distinct_labs_so_far" in m3_extra and m3 < m3_extra
+    assert len(m3_extra) == len(model_columns("M3", extra=True))  # no duplicates
+
+
+def test_added_inputs_are_computed_correctly():
+    t = fake_patients(n_patients=1, seed=6).iloc[:6].copy()
+    t["ICULOS"] = [1, 2, 3, 4, 5, 6]
+    t["HR"] = [100.0, np.nan, 120.0, 120.0, 120.0, 120.0]
+    t["SBP"] = [100.0, np.nan, 80.0, 80.0, 80.0, 80.0]
+    t["DBP"] = 60.0
+    t["Resp"] = 24.0
+    t["MAP"] = 65.0
+    t["WBC"] = [np.nan, 8.0, np.nan, 14.0, np.nan, np.nan]
+    t["Platelets"] = [np.nan, 90.0, np.nan, np.nan, np.nan, np.nan]
+    t["Creatinine"] = [np.nan, 2.5, np.nan, np.nan, np.nan, np.nan]
+    t["Bilirubin_total"] = np.nan
+    f = build_features(t)
+    assert f["shock_index"].tolist() == [1.0, 1.0, 1.5, 1.5, 1.5, 1.5]
+    assert f["pulse_pressure"].iloc[0] == 40.0
+    assert np.isnan(f["delta_WBC"].iloc[2]) and f["delta_WBC"].tolist()[3:] == [6.0, 6.0, 6.0]
+    # hour 1: low blood pressure only. From hour 2: platelets under 100 (2) and creatinine 2.5 (2) as well
+    assert f["sofa_partial"].tolist() == [1, 5, 5, 5, 5, 5]
+    assert f["qsofa_partial"].tolist() == [2, 2, 2, 2, 2, 2]
+
 
 def test_piles_do_not_share_patients():
     full = fake_patients(n_patients=60, seed=4)

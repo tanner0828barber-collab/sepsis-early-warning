@@ -34,7 +34,11 @@ SETTINGS_GRID = [
     {"name": "big trees",     "learning_rate": 0.05, "max_leaf_nodes": 63, "min_samples_leaf": 100, "l2_regularization": 1.0,  "class_weight": None},
     {"name": "fast",          "learning_rate": 0.10, "max_leaf_nodes": 31, "min_samples_leaf": 50,  "l2_regularization": 0.0,  "class_weight": None},
     {"name": "slow careful",  "learning_rate": 0.03, "max_leaf_nodes": 31, "min_samples_leaf": 200, "l2_regularization": 10.0, "class_weight": None},
+    # added for the improvement round, after the first search (see DECISIONS.md)
+    {"name": "slow careful weighted", "learning_rate": 0.03, "max_leaf_nodes": 31, "min_samples_leaf": 200, "l2_regularization": 10.0, "class_weight": "balanced"},
 ]
+# The first search used only the first six.
+FIRST_SEARCH = SETTINGS_GRID[:6]
 
 
 def make_model(settings, trees):
@@ -48,19 +52,47 @@ def make_model(settings, trees):
     )
 
 
-def fit_model(rows, columns, settings, trees):
+def fit_model(rows, columns, settings, trees, target=None):
     """Train one model on the given rows using only the given input columns."""
     model = make_model(settings, trees)
-    model.fit(rows[columns], rows["SepsisLabel"])
+    model.fit(rows[columns], rows["SepsisLabel"] if target is None else target)
     return model
 
 
-def score_rows(model, rows, columns):
-    """The relative risk score for every hourly row."""
-    return model.predict_proba(rows[columns])[:, 1]
+def score_rows(model, rows, columns, smooth=1):
+    """The relative risk score for every hourly row.
+
+    With smooth above 1, the score is the average of the patient's last few
+    hourly outputs, so one noisy hour cannot fire an alert by itself.
+    """
+    scores = model.predict_proba(rows[columns])[:, 1]
+    return smooth_scores(rows, scores, smooth)
 
 
-def search_settings(fit_rows, tune_rows, columns, grid=SETTINGS_GRID, budget=BUDGET):
+def smooth_scores(rows, scores, hours):
+    """Average each patient's scores over the last `hours` hours (past only)."""
+    if hours <= 1:
+        return np.asarray(scores)
+    series = pd.Series(np.asarray(scores))
+    averaged = series.groupby(rows["pid"].to_numpy(), sort=False).rolling(hours, min_periods=1).mean()
+    return averaged.reset_index(level=0, drop=True).sort_index().to_numpy()
+
+
+def wide_target(rows):
+    """A wider training target: 1 from 12 hours before onset, not only 6.
+
+    The challenge label switches on 6 hours before onset. This switches it on
+    6 hours earlier still, to teach the model what the run-up looks like.
+    It is used for training only. Every reported number still uses the
+    challenge's own label.
+    """
+    hour = rows["ICULOS"]
+    label_hour = hour.where(rows["SepsisLabel"] == 1)
+    label_start = label_hour.groupby(rows["pid"], sort=False).transform("min")
+    return (hour >= label_start - 6).astype(int)
+
+
+def search_settings(fit_rows, tune_rows, columns, grid=FIRST_SEARCH, budget=BUDGET):
     """Try every candidate and every stopping point. Return one row per try."""
     results = []
     for settings in grid:

@@ -39,7 +39,7 @@ Sat 11/14, 2:20 PM. Tanner read the evidence summary and the prediction below an
 - Sat 11/14, 2:38 PM. Found on hospital A dev: time in the unit alone (T0) scores utility 0.312, more than body signals alone (M1, 0.177). Only 1 of 3,710 dev patients without sepsis has a stay of 72 hours or more, while a quarter of sepsis patients have their label start after hour 71. So in this dataset a long stay nearly gives the answer away. The model alerts by onset on 84% of sepsis patients whose label starts at hour 24 or later and only 34% of those whose label starts earlier.
 - Sat 11/14, 2:40 PM. Tanner chose to improve the model before freezing. Nothing was frozen and hospital B is still unopened.
 
-## Improvement plan (written at 2:45 PM, before any of it was run)
+## Improvement plan (written at 2:42 PM, before any of it was run)
 
 What the research says helped on this dataset: the first place team (Morrill et al.) added shock index, the BUN to creatinine ratio, a partial SOFA score, counts of measurements in a look-back window, and the highest and lowest of each vital sign over a window. Yang et al. 2020 used 168 inputs and found time in the unit was their single most important input, which matches what we saw on dev.
 

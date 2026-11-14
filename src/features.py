@@ -18,6 +18,8 @@ not proof a test was ordered at that moment or that a clinician suspected sepsis
 """
 import pandas as pd
 
+from sirs import sirs_count
+
 VITALS = ["HR", "O2Sat", "Temp", "SBP", "MAP", "DBP", "Resp"]
 LABS = [
     "BaseExcess", "HCO3", "FiO2", "pH", "PaCO2", "SaO2", "AST", "BUN",
@@ -50,25 +52,57 @@ def feature_groups():
             [f"hours_since_{c}" for c in values]
             + ["labs_in_last_6h", "labs_so_far"]
         ),
+        # The three groups below were added in the improvement round.
+        # They follow what the top challenge teams reported using.
+        "scores": [
+            "shock_index", "pulse_pressure", "bun_creatinine_ratio",
+            "sofa_partial", "qsofa_partial", "sirs_count",
+        ],
+        "long_trends": (
+            [f"spread6_{c}" for c in VITALS]
+            + [f"mean24_{c}" for c in VITALS]
+            + [f"min24_{c}" for c in VITALS]
+            + [f"max24_{c}" for c in VITALS]
+            + [f"delta_{c}" for c in LABS]
+        ),
+        "measurement_extra": [
+            "distinct_labs_so_far", "labs_per_hour_so_far",
+            "hours_since_any_lab", "vitals_empty_last_6h",
+        ],
     }
 
 
-# The four planned models, by which groups they are allowed to see.
+# The planned models, by which groups they are allowed to see.
 # T0 is the odd one out: it sees a single column, hours in the unit.
 MODEL_GROUPS = {
     "M1": ["physiology", "trends", "demographics"],
     "M2": ["physiology", "trends", "demographics", "time"],
     "M3": ["physiology", "trends", "demographics", "time", "measurement"],
 }
+# Where each added group belongs: body signals join at M1, measurement signals at M3.
+EXTRA_GROUPS = {
+    "M1": ["scores", "long_trends"],
+    "M2": ["scores", "long_trends"],
+    "M3": ["scores", "long_trends", "measurement_extra"],
+}
+# Set by the cross-validation result in the improvement round (see DECISIONS.md).
+USE_EXTRA_INPUTS = False
 
 
-def model_columns(name):
-    """Return the input columns for T0, M1, M2 or M3."""
+def model_columns(name, extra=None):
+    """Return the input columns for T0, M1, M2 or M3.
+
+    `extra` says whether to include the inputs added in the improvement round.
+    Left as None, it follows USE_EXTRA_INPUTS.
+    """
     if name == "T0":
         return ["hours_in_unit"]
+    if extra is None:
+        extra = USE_EXTRA_INPUTS
     groups = feature_groups()
+    wanted = MODEL_GROUPS[name] + (EXTRA_GROUPS[name] if extra else [])
     columns = []
-    for group in MODEL_GROUPS[name]:
+    for group in wanted:
         columns += groups[group]
     return columns
 
@@ -131,6 +165,52 @@ def build_features(table):
         .reset_index(level=0, drop=True).sort_index()
     )
     out["labs_so_far"] = labs_grouped.cumsum()
+
+    # ---- inputs added in the improvement round ----
+
+    # scores: bedside ratios and partial clinical scores, from the latest known values.
+    # A part whose input was never measured counts as 0, so these are "at least" scores.
+    out["shock_index"] = last["HR"] / last["SBP"]
+    out["pulse_pressure"] = last["SBP"] - last["DBP"]
+    out["bun_creatinine_ratio"] = last["BUN"] / last["Creatinine"]
+    platelets, bilirubin, creatinine = last["Platelets"], last["Bilirubin_total"], last["Creatinine"]
+    out["sofa_partial"] = (
+        (platelets < 150).astype(int) + (platelets < 100) + (platelets < 50) + (platelets < 20)
+        + (bilirubin >= 1.2).astype(int) + (bilirubin >= 2.0) + (bilirubin >= 6.0) + (bilirubin >= 12.0)
+        + (creatinine >= 1.2).astype(int) + (creatinine >= 2.0) + (creatinine >= 3.5) + (creatinine >= 5.0)
+        + (last["MAP"] < 70).astype(int)
+    )
+    out["qsofa_partial"] = (last["SBP"] <= 100).astype(int) + (last["Resp"] >= 22)
+    out["sirs_count"] = sirs_count(last.add_prefix("last_"))
+
+    # long trends: how much each vital sign bounced around, and a 24 hour view
+    spread = rolling.std().reset_index(level=0, drop=True).sort_index()
+    for c in VITALS:
+        out[f"spread6_{c}"] = spread[c]
+    day = by_patient[VITALS].rolling(24, min_periods=1)
+    for name, result in [("mean24", day.mean()), ("min24", day.min()), ("max24", day.max())]:
+        result = result.reset_index(level=0, drop=True).sort_index()
+        for c in VITALS:
+            out[f"{name}_{c}"] = result[c]
+    # delta: for each lab, the latest measurement minus the one before it
+    deltas = pd.DataFrame(index=table.index, columns=LABS, dtype=float)
+    for c in LABS:
+        was_measured = measured[c]
+        deltas.loc[was_measured, c] = table.loc[was_measured, c].groupby(pid[was_measured], sort=False).diff()
+    deltas = deltas.groupby(pid, sort=False).ffill()
+    for c in LABS:
+        out[f"delta_{c}"] = deltas[c]
+
+    # more measurement signals
+    out["distinct_labs_so_far"] = last[LABS].notna().sum(axis=1)
+    hours_seen = by_patient.cumcount() + 1
+    out["labs_per_hour_so_far"] = out["labs_so_far"] / hours_seen
+    out["hours_since_any_lab"] = (-last_measured_hour[LABS]).add(hour, axis=0).min(axis=1)
+    empty_vitals = (~measured[VITALS]).sum(axis=1)
+    out["vitals_empty_last_6h"] = (
+        empty_vitals.groupby(pid, sort=False).rolling(WINDOW, min_periods=1).sum()
+        .reset_index(level=0, drop=True).sort_index()
+    )
 
     keys = table[["pid", "hosp", "ICULOS", "SepsisLabel"]]
     return pd.concat([keys, pd.DataFrame(out)], axis=1)

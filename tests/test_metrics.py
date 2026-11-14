@@ -111,3 +111,17 @@ def test_threshold_never_exceeds_the_budget_when_scores_are_tied():
     threshold = threshold_for_budget(rows, scores, budget=0.30)   # allows three, but nine are tied
     result = patient_outcomes(rows, scores >= threshold)
     assert summarize(result)["false_alarms"] == 1
+
+
+def test_wide_target_and_smoothing_use_only_the_past():
+    from train import smooth_scores, wide_target
+
+    rows = pd.concat([patient("a", 20, label_from=15), patient("b", 10)], ignore_index=True)
+    wide = wide_target(rows)
+    assert wide[rows.pid == "a"].tolist() == [0] * 8 + [1] * 12      # on from hour 9, six hours earlier
+    assert wide[rows.pid == "b"].sum() == 0
+
+    scores = np.arange(len(rows), dtype=float)
+    smoothed = smooth_scores(rows, scores, 3)
+    assert smoothed[0] == 0.0 and smoothed[1] == 0.5 and smoothed[2] == 1.0 and smoothed[3] == 2.0
+    assert smoothed[20] == 20.0                                         # patient b starts fresh
