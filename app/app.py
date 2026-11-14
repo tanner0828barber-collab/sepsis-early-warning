@@ -25,11 +25,17 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from features import build_features  # noqa: E402
+from train import score_rows  # noqa: E402
 
 APP_DATA = Path(__file__).resolve().parent / "data"
 
 # ---------------------------------------------------------------- frozen things
-FROZEN = json.loads((ROOT / "results" / "frozen.json").read_text())
+# Before the freeze, the app can preview with the not-yet-frozen candidate.
+_frozen_file = ROOT / "results" / "frozen.json"
+if not _frozen_file.exists():
+    _frozen_file = ROOT / "results" / "a_dev_candidate.json"
+FROZEN = json.loads(_frozen_file.read_text())
+SMOOTH = FROZEN.get("smooth", 1)
 THRESHOLD = FROZEN["models"]["M3"]["threshold"]
 COLUMNS = FROZEN["models"]["M3"]["columns"]
 MODEL = joblib.load(ROOT / "models" / "M3.joblib")
@@ -107,6 +113,8 @@ table.plain td.num, table.plain th.num {{ text-align: right; }}
 .preview {{ background: {WATCH_TINT}; color: {WATCH_LABEL}; border-radius: 8px; padding: 8px 12px; font-size: 16px; font-weight: 500; }}
 button.pill {{ border-radius: 999px !important; min-height: 48px !important; font-size: 16px !important; }}
 button.go {{ min-height: 48px !important; font-size: 16px !important; }}
+button.go.primary {{ background: {ACCENT} !important; color: #FFFFFF !important; border-color: {ACCENT} !important; }}
+.chart {{ min-height: 740px; }}
 footer {{ display: none !important; }}
 @media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; animation: none !important; }} }}
 """
@@ -138,7 +146,7 @@ def seen_so_far(pid, hour):
     rows = record(pid)
     rows = rows[rows.ICULOS <= hour]
     inputs = build_features(rows)
-    inputs["score"] = MODEL.predict_proba(inputs[COLUMNS])[:, 1]
+    inputs["score"] = score_rows(MODEL, inputs, COLUMNS, SMOOTH)
     return inputs
 
 
@@ -388,7 +396,7 @@ with gr.Blocks(css=CSS, js=FORCE_LIGHT, analytics_enabled=False, title="Sepsis E
             timer = gr.Timer(0.7, active=False)
 
             status = gr.HTML(show("", 1)[1])
-            chart = gr.Plot(show_label=False)
+            chart = gr.Plot(show_label=False, elem_classes="chart")
             gr.HTML('<div class="caption" style="font-size:16px;color:#111418;font-weight:500;margin-top:16px;">What the model could see at this hour</div>')
             seen_html = gr.HTML("")
             gr.HTML(

@@ -6,7 +6,7 @@ __pycache__/
 .pytest_cache/
 
 # The patient data is never committed. The notebook downloads it from PhysioNet.
-data/
+/data/
 *.psv
 stacked.pkl
 

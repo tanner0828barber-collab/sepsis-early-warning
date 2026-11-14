@@ -1,0 +1,3 @@
+[ 0.4 min] pool patients 16268 rows 631782
+[ 1.7 min] 1 baseline | current inputs, base weighted, 150 trees | {'alerted_by_onset': 0.5943, 'caught_in_window': 0.148, 'utility': 0.343, 'hourly_auroc': 0.8149} | kept: True
+[ 3.3 min] 2 inputs | added inputs (164 in all) | {'alerted_by_onset': 0.6027, 'caught_in_window': 0.1676, 'utility': 0.3465, 'hourly_auroc': 0.8155} | kept: False

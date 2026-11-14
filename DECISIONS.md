@@ -58,6 +58,10 @@ Steps, in order:
 5. Alert smoothing: alert on the average of the last 2 or 3 hourly scores, so one noisy hour cannot fire an alert.
 6. Retrain the winner on fit and tune together, score dev once, freeze.
 
+Added at 2:52 PM, after steps 1 and 2 came back and before running it:
+
+7. Grade each patient against other patients at the same hour of their stay. The first model alerts by onset on 84% of sepsis patients whose label starts at hour 24 or later and only 34% of the earlier ones, because its score climbs with time in the unit. Replacing the score with "the share of all patients at this same hour who score lower" might spend the alert budget more evenly across the stay. It needs no sepsis labels. Same data, yardstick and keep rule. Honest note: this idea came from looking at dev results for the first model, so it is not a blind idea. It is still judged only by cross-validation.
+
 ## Why no new outside data
 
 The other open intensive care datasets either need a credentialed application that takes days, or have no ready-made hourly sepsis label. Building that label ourselves is days of careful work and easy to get wrong. A third hospital is listed as future work.

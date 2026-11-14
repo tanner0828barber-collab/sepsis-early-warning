@@ -1,17 +1,21 @@
-"""Step 2 of training: train the planned models and score hospital A dev.
+"""Train the final models and score hospital A dev.
 
-Uses the settings picked by the written rule from results/settings_search.csv.
-Trains T0, M1, M2 and M3 (and the rescaled variant of M3) on the fit pile
-with identical settings, sets each threshold on dev at the 15% alert budget,
-and writes:
+Reads the choices made by cross-validation in the improvement round
+(results/improvement_choice.json): which inputs, which settings, how many
+trees, which training target, and how much alert smoothing.
+
+Trains T0, M1, M2 and M3 (and the rescaled variant of M3) on the fit and tune
+patients together, with identical settings, sets each threshold on dev at the
+15% alert budget, and writes:
 
   models/<name>.joblib            the trained models
   results/a_dev_candidate.json    the thresholds and settings that would be frozen
   results/a_dev_results.json      every reported number on hospital A dev
   results/a_dev_patients_M3.csv   one row per dev patient: outcome and alert hour
 
-Hospital B is not touched. Nothing is frozen until this output has been read
-and results/frozen.json is committed.
+This is the second and last look at dev. The first look was the first model,
+kept in results/first_model_a_dev_results.json. Nothing here was chosen on
+dev except the threshold. Hospital B is not touched.
 """
 import json
 import sys
@@ -29,42 +33,48 @@ from metrics import patient_outcomes, threshold_for_budget  # noqa: E402
 from report import evaluate_site, print_table  # noqa: E402
 from rescale import rescale_features, site_norms  # noqa: E402
 from split import load_piles  # noqa: E402
-from train import BUDGET, SETTINGS_GRID, fit_model, pick_settings, score_rows  # noqa: E402
+from train import BUDGET, SETTINGS_GRID, fit_model, score_rows, wide_target  # noqa: E402
 
 OTHER_BUDGETS = [0.05, 0.10, 0.20]
+
+choice = json.loads((ROOT / "results" / "improvement_choice.json").read_text())
+settings = next(s for s in SETTINGS_GRID if s["name"] == choice["settings"])
+trees, smooth, extra = choice["trees"], choice["smooth"], choice["extra_inputs"]
+print("choice:", choice, flush=True)
 
 piles = load_piles()
 features = pd.read_parquet(ROOT / "data" / "features_A.parquet")
 features = features.merge(piles, on="pid", how="left", validate="many_to_one")
-fit_rows = features[features.pile == "fit"]
+fit_rows = features[features.pile.isin(["fit", "tune"])].reset_index(drop=True)
 dev_rows = features[features.pile == "dev"].reset_index(drop=True)
+print("training patients", fit_rows.pid.nunique(), "dev patients", dev_rows.pid.nunique(), flush=True)
 
-# hospital A's own average and spread, from the fit patients' raw measurements
+# hospital A's own average and spread, from the training patients' raw measurements
 raw = load_hospital("A")
-norms_A = site_norms(raw[raw.pid.isin(piles.pid[piles.pile == "fit"])])
+norms_A = site_norms(raw[raw.pid.isin(set(fit_rows.pid))])
 (ROOT / "results").mkdir(exist_ok=True)
 norms_A.to_csv(ROOT / "results" / "site_norms_A.csv")
 
-picked = pick_settings(pd.read_csv(ROOT / "results" / "settings_search.csv"))
-settings = next(s for s in SETTINGS_GRID if s["name"] == picked["name"])
-trees = int(picked["trees"])
-print("settings:", settings, "trees:", trees, flush=True)
-
-candidate = {"budget": BUDGET, "settings": settings, "trees": trees, "models": {}, "other_budgets": {}}
+candidate = {
+    "budget": BUDGET, "settings": settings, "trees": trees, "smooth": smooth,
+    "extra_inputs": extra, "wide_target": choice["wide_target"],
+    "trained_on": "hospital A fit and tune patients", "models": {}, "other_budgets": {},
+}
 models = {}
 (ROOT / "models").mkdir(exist_ok=True)
 
 for name in ["T0", "M1", "M2", "M3", "M3 rescaled"]:
-    columns = model_columns("M3" if name == "M3 rescaled" else name)
+    columns = model_columns("M3" if name == "M3 rescaled" else name, extra=extra)
     train_rows, check_rows = fit_rows, dev_rows
     if name == "M3 rescaled":
         train_rows = rescale_features(fit_rows, norms_A)
         check_rows = rescale_features(dev_rows, norms_A)
-    model = fit_model(train_rows, columns, settings, trees)
+    target = wide_target(train_rows) if choice["wide_target"] else None
+    model = fit_model(train_rows, columns, settings, trees, target)
     joblib.dump(model, ROOT / "models" / f"{name.replace(' ', '_')}.joblib")
     models[name] = model
 
-    scores = score_rows(model, check_rows, columns)
+    scores = score_rows(model, check_rows, columns, smooth)
     threshold = threshold_for_budget(dev_rows, scores, BUDGET)
     candidate["models"][name] = {"threshold": threshold, "columns": columns}
 

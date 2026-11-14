@@ -1,0 +1,3 @@
+step,what,alerted_by_onset,caught_in_window,utility,hourly_auroc,kept
+1 baseline,"current inputs, base weighted, 150 trees",0.5942737430167597,0.14804469273743018,0.3429756378851854,0.8148790823309475,True
+2 inputs,added inputs (164 in all),0.6026536312849162,0.16759776536312848,0.34650009054776637,0.8154728522804354,False

@@ -32,6 +32,7 @@ def threshold_for_share_of_all(rows, scores, share):
 def evaluate_site(features, frozen, models, site_norms, with_ranges=True):
     """Return (numbers by method, per-patient tables by method, M3 scores)."""
     numbers, tables = {}, {}
+    smooth = frozen.get("smooth", 1)
 
     def record(name, alert_on, scores=None):
         result, patients = evaluate_alerts(features, alert_on, scores)
@@ -45,7 +46,7 @@ def evaluate_site(features, frozen, models, site_norms, with_ranges=True):
     scores = {}
     for name in PLANNED_MODELS:
         spec = frozen["models"][name]
-        scores[name] = score_rows(models[name], features, spec["columns"])
+        scores[name] = score_rows(models[name], features, spec["columns"], smooth)
         record(name, scores[name] >= spec["threshold"], scores[name])
 
     # the main model at three other budgets, thresholds also frozen on hospital A dev
@@ -60,7 +61,7 @@ def evaluate_site(features, frozen, models, site_norms, with_ranges=True):
     # travel attempt 3: values rescaled by this site's own average and spread
     spec = frozen["models"]["M3 rescaled"]
     rescaled = rescale_features(features, site_norms)
-    rescaled_scores = score_rows(models["M3 rescaled"], rescaled, spec["columns"])
+    rescaled_scores = score_rows(models["M3 rescaled"], rescaled, spec["columns"], smooth)
     record("M3 rescaled", rescaled_scores >= spec["threshold"], rescaled_scores)
 
     # the comparators
