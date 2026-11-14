@@ -105,6 +105,22 @@ Version 1 above stays the result of record. Version 2 is "the best model we coul
   - Baseline, run in the same script on the same folds: a hospital A only model, nested, scored on the same hospital A patients.
   - Keep rule, hospital A patients, 25% cap: the both-hospitals model is "better at A" only if it alerts by onset on at least 1.5 points more sepsis patients than the A only model and its utility is not lower by more than 0.01. The hospital B number is reported whatever it is.
   - Claude's expectation, logged in advance and labeled a guess: at hospital A, utility 0.39 to 0.42 at the 25% cap, a gain of under 0.02 over the A only model. At hospital B, utility 0.30 to 0.38, lower than A because 45% of B's sepsis patients have their label start in the first day. If any utility comes back at 0.50 or more, treat it as a leak until proven otherwise.
+- Sat 11/14, 4:44 PM. RESULT of the both-hospitals model (results/after_the_fact_v2_both_hospitals.csv, 14 minutes of training, nested cross-validation as planned). After-the-fact, and it cannot claim to travel.
+
+  | 25% cap, each hospital's own cutoff | Utility | Timely (first alert in the 12 hours before onset) | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | A only model, hospital A patients | 0.399 | 304 of 1,432 (21.2%) | 72.7% | 391 | 3,816 of 14,836 (25.7%) |
+  | Both-hospitals model, hospital A patients | 0.402 | 295 of 1,432 (20.6%) | 72.1% | 399 | 3,766 of 14,836 (25.4%) |
+  | Both-hospitals model, hospital B patients | 0.406 | 364 of 1,142 (31.9%) | 80.7% | 220 | 4,755 of 18,858 (25.2%) |
+  | Both-hospitals model, both together | 0.403 | 659 of 2,574 (25.6%) | 76.0% | 619 | 8,521 of 33,694 (25.3%) |
+
+  - Keep rule at hospital A: NOT met. Adding hospital B's patients changed alerted by onset at A by minus 0.6 points (72.1% against 72.7%) and utility by plus 0.003. So for hospital A, the extra data is no better than hospital A's own data. That is a result, not a failure to hide.
+  - Hospital B is where it matters: with its own labeled patients in training and its own cutoff, hospital B reaches utility 0.406 and 220 missed of 1,142. Version 1, which never saw hospital B, scored 0.238 with 656 missed there. The two are not the same test: version 1 used a 15% budget and delivered 7.2% false alarms, while this delivers 25.2%. At the 15% cap the both-hospitals model scores 0.386 at B with 319 missed and 15.5% false alarms.
+  - The nested check works as intended: the cap was 25% and the held-out false alarm shares came out at 25.2% to 25.7%, slightly over, because each cutoff was set on patients other than the ones scored.
+  - Each hospital needs its own alert line even inside one model: hospital B's cutoff came out near 0.025 and hospital A's near 0.040 in every fold. With one shared cutoff (shown for comparison only), hospital A gets 32.9% false alarms and hospital B 19.5%, which breaks the cap at A.
+  - The 15% cap A only number, 0.355 and 61.1%, matches the outside review's nested rerun (0.355, 61.1%), so the method reproduces.
+  - Claude's logged guess against the result: hospital A was guessed at 0.39 to 0.42 with a gain under 0.02 (right: 0.402, gain 0.003). Hospital B was guessed at 0.30 to 0.38 (wrong: 0.406). Hospital B is not a harder hospital once the model has its data. No utility came near 0.50, so no leak flag.
+  - Costs, stated plainly: at the 25% cap that is 5.2 false alarms per alerted sepsis patient at hospital B and 346 alerts per 1,000 patient-days, about three times version 1's 115.
 
 ## Why no new outside data
 

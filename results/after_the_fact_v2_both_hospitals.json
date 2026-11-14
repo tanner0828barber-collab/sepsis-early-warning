@@ -1,0 +1,500 @@
+{
+  "label": "AFTER-THE-FACT. Hospital B had already been scored once with the frozen version 1 model.",
+  "design": {
+    "patients": "hospital A fit and tune, plus all of hospital B. Hospital A dev not loaded.",
+    "outer_folds": 3,
+    "inner_folds": 2,
+    "trees": 200,
+    "settings": {
+      "name": "slow careful",
+      "learning_rate": 0.03,
+      "max_leaf_nodes": 31,
+      "min_samples_leaf": 200,
+      "l2_regularization": 10.0,
+      "class_weight": null
+    },
+    "inputs": 100,
+    "seed": 2026,
+    "cutoffs": "set on inner-fold held-out scores inside each outer training set"
+  },
+  "results": [
+    {
+      "model": "A only",
+      "cutoff": "per hospital",
+      "cap": 0.15,
+      "scored_on": "hospital A",
+      "utility": 0.3550578076002936,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 248,
+      "very_early": 627,
+      "missed": 557,
+      "alerted_by_onset_share": 0.6110335195530726,
+      "caught_share": 0.17318435754189945,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 2210,
+      "false_alarm_share": 0.14896198436236183,
+      "false_alerts_per_true_alert": 2.525714285714286,
+      "alerts_per_1000_patient_days": 229.75013533149092
+    },
+    {
+      "model": "A only",
+      "cutoff": "per hospital",
+      "cap": 0.25,
+      "scored_on": "hospital A",
+      "utility": 0.3993435286941106,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 304,
+      "very_early": 737,
+      "missed": 391,
+      "alerted_by_onset_share": 0.7269553072625698,
+      "caught_share": 0.2122905027932961,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 3816,
+      "false_alarm_share": 0.25721218657320033,
+      "false_alerts_per_true_alert": 3.6657060518731988,
+      "alerts_per_1000_patient_days": 379.11811352650125
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.15,
+      "scored_on": "hospital A",
+      "utility": 0.35683445008911807,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 239,
+      "very_early": 625,
+      "missed": 568,
+      "alerted_by_onset_share": 0.6033519553072626,
+      "caught_share": 0.16689944134078213,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 2130,
+      "false_alarm_share": 0.14356969533567,
+      "false_alerts_per_true_alert": 2.4652777777777777,
+      "alerts_per_1000_patient_days": 222.03861458541078
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.15,
+      "scored_on": "hospital B",
+      "utility": 0.3861084710427079,
+      "patients": 20000,
+      "sepsis_patients": 1142,
+      "caught": 338,
+      "very_early": 485,
+      "missed": 319,
+      "alerted_by_onset_share": 0.7206654991243433,
+      "caught_share": 0.29597197898423816,
+      "non_sepsis_patients": 18858,
+      "false_alarms": 2929,
+      "false_alarm_share": 0.15531869763495598,
+      "false_alerts_per_true_alert": 3.5589307411907654,
+      "alerts_per_1000_patient_days": 239.37164942027178
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.15,
+      "scored_on": "both together",
+      "utility": 0.3696365698717416,
+      "patients": 36268,
+      "sepsis_patients": 2574,
+      "caught": 577,
+      "very_early": 1110,
+      "missed": 887,
+      "alerted_by_onset_share": 0.6554001554001554,
+      "caught_share": 0.22416472416472416,
+      "non_sepsis_patients": 33694,
+      "false_alarms": 5059,
+      "false_alarm_share": 0.15014542648542767,
+      "false_alerts_per_true_alert": 2.998814463544754,
+      "alerts_per_1000_patient_days": 231.51479756087238
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.25,
+      "scored_on": "hospital A",
+      "utility": 0.4016617897957433,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 295,
+      "very_early": 738,
+      "missed": 399,
+      "alerted_by_onset_share": 0.7213687150837989,
+      "caught_share": 0.20600558659217877,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 3766,
+      "false_alarm_share": 0.25384200593151796,
+      "false_alerts_per_true_alert": 3.6456921587608906,
+      "alerts_per_1000_patient_days": 365.59446138066613
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.25,
+      "scored_on": "hospital B",
+      "utility": 0.4057951375049822,
+      "patients": 20000,
+      "sepsis_patients": 1142,
+      "caught": 364,
+      "very_early": 558,
+      "missed": 220,
+      "alerted_by_onset_share": 0.8073555166374781,
+      "caught_share": 0.318739054290718,
+      "non_sepsis_patients": 18858,
+      "false_alarms": 4755,
+      "false_alarm_share": 0.2521476296531976,
+      "false_alerts_per_true_alert": 5.157266811279826,
+      "alerts_per_1000_patient_days": 345.7660483336505
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "per hospital",
+      "cap": 0.25,
+      "scored_on": "both together",
+      "utility": 0.4034693861133383,
+      "patients": 36268,
+      "sepsis_patients": 2574,
+      "caught": 659,
+      "very_early": 1296,
+      "missed": 619,
+      "alerted_by_onset_share": 0.7595182595182595,
+      "caught_share": 0.25602175602175603,
+      "non_sepsis_patients": 33694,
+      "false_alarms": 8521,
+      "false_alarm_share": 0.2528936902712649,
+      "false_alerts_per_true_alert": 4.358567774936061,
+      "alerts_per_1000_patient_days": 354.75402449602774
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.15,
+      "scored_on": "hospital A",
+      "utility": 0.3845370626304603,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 273,
+      "very_early": 677,
+      "missed": 482,
+      "alerted_by_onset_share": 0.6634078212290503,
+      "caught_share": 0.19064245810055866,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 2916,
+      "false_alarm_share": 0.19654893502291723,
+      "false_alerts_per_true_alert": 3.0694736842105264,
+      "alerts_per_1000_patient_days": 287.9094371159672
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.15,
+      "scored_on": "hospital B",
+      "utility": 0.36027838243860577,
+      "patients": 20000,
+      "sepsis_patients": 1142,
+      "caught": 335,
+      "very_early": 424,
+      "missed": 383,
+      "alerted_by_onset_share": 0.6646234676007006,
+      "caught_share": 0.29334500875656744,
+      "non_sepsis_patients": 18858,
+      "false_alarms": 2243,
+      "false_alarm_share": 0.11894156326227595,
+      "false_alerts_per_true_alert": 2.9552042160737813,
+      "alerts_per_1000_patient_days": 200.41076385015648
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.15,
+      "scored_on": "both together",
+      "utility": 0.3739282525159619,
+      "patients": 36268,
+      "sepsis_patients": 2574,
+      "caught": 608,
+      "very_early": 1101,
+      "missed": 865,
+      "alerted_by_onset_share": 0.6639471639471639,
+      "caught_share": 0.23620823620823622,
+      "non_sepsis_patients": 33694,
+      "false_alarms": 5159,
+      "false_alarm_share": 0.15311331394313527,
+      "false_alerts_per_true_alert": 3.018724400234055,
+      "alerts_per_1000_patient_days": 240.07283805085032
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.25,
+      "scored_on": "hospital A",
+      "utility": 0.4164072552589189,
+      "patients": 16268,
+      "sepsis_patients": 1432,
+      "caught": 327,
+      "very_early": 812,
+      "missed": 293,
+      "alerted_by_onset_share": 0.7953910614525139,
+      "caught_share": 0.22835195530726257,
+      "non_sepsis_patients": 14836,
+      "false_alarms": 4887,
+      "false_alarm_share": 0.3294014559180372,
+      "false_alerts_per_true_alert": 4.290605794556629,
+      "alerts_per_1000_patient_days": 482.78678404892827
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.25,
+      "scored_on": "hospital B",
+      "utility": 0.3992280099334704,
+      "patients": 20000,
+      "sepsis_patients": 1142,
+      "caught": 339,
+      "very_early": 523,
+      "missed": 280,
+      "alerted_by_onset_share": 0.7548161120840631,
+      "caught_share": 0.2968476357267951,
+      "non_sepsis_patients": 18858,
+      "false_alarms": 3685,
+      "false_alarm_share": 0.1954077844946442,
+      "false_alerts_per_true_alert": 4.274941995359629,
+      "alerts_per_1000_patient_days": 284.5687963831784
+    },
+    {
+      "model": "both hospitals",
+      "cutoff": "shared",
+      "cap": 0.25,
+      "scored_on": "both together",
+      "utility": 0.40889442479466054,
+      "patients": 36268,
+      "sepsis_patients": 2574,
+      "caught": 666,
+      "very_early": 1335,
+      "missed": 573,
+      "alerted_by_onset_share": 0.7773892773892774,
+      "caught_share": 0.25874125874125875,
+      "non_sepsis_patients": 33694,
+      "false_alarms": 8572,
+      "false_alarm_share": 0.2544073128746958,
+      "false_alerts_per_true_alert": 4.283858070964517,
+      "alerts_per_1000_patient_days": 374.41857628587644
+    }
+  ],
+  "cutoffs": [
+    {
+      "model": "A only",
+      "outer_fold": 0,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.05590080632865955
+    },
+    {
+      "model": "A only",
+      "outer_fold": 0,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.05590080632865955
+    },
+    {
+      "model": "A only",
+      "outer_fold": 0,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.03843906154045354
+    },
+    {
+      "model": "A only",
+      "outer_fold": 0,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.03843906154045354
+    },
+    {
+      "model": "A only",
+      "outer_fold": 1,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.055598805885034214
+    },
+    {
+      "model": "A only",
+      "outer_fold": 1,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.055598805885034214
+    },
+    {
+      "model": "A only",
+      "outer_fold": 1,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.037917514729694936
+    },
+    {
+      "model": "A only",
+      "outer_fold": 1,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.037917514729694936
+    },
+    {
+      "model": "A only",
+      "outer_fold": 2,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.05405078089652761
+    },
+    {
+      "model": "A only",
+      "outer_fold": 2,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.05405078089652761
+    },
+    {
+      "model": "A only",
+      "outer_fold": 2,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.03673056587559685
+    },
+    {
+      "model": "A only",
+      "outer_fold": 2,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.03673056587559685
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.04733895888626546
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.05717471071154394
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.15,
+      "cutoff": "hospital B",
+      "value": 0.037764029799524056
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.031242928741388416
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.03945839921498542
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 0,
+      "budget": 0.25,
+      "cutoff": "hospital B",
+      "value": 0.024774443974203694
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.047966624279461446
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.05836308709310309
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.15,
+      "cutoff": "hospital B",
+      "value": 0.03939659418271703
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.03214449523391781
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.040068474178437175
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 1,
+      "budget": 0.25,
+      "cutoff": "hospital B",
+      "value": 0.02538067110511802
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.15,
+      "cutoff": "shared",
+      "value": 0.04630479386037809
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.15,
+      "cutoff": "hospital A",
+      "value": 0.05572359228809188
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.15,
+      "cutoff": "hospital B",
+      "value": 0.037497624841441556
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.25,
+      "cutoff": "shared",
+      "value": 0.03083269132493334
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.25,
+      "cutoff": "hospital A",
+      "value": 0.03858424966915691
+    },
+    {
+      "model": "both hospitals",
+      "outer_fold": 2,
+      "budget": 0.25,
+      "cutoff": "hospital B",
+      "value": 0.024629696852323385
+    }
+  ]
+}
