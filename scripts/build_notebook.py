@@ -226,18 +226,18 @@ choice
 md("""
 ## 7. The final models and the freeze
 
-The cell below retrains T0, M1, M2 and M3 with the chosen settings on the fit and tune patients, sets each threshold on dev at the 15% alert budget, and checks that the thresholds match the frozen file that was committed before hospital B was opened.
+The cell below retrains T0, M1, M2 and M3 from scratch with the chosen settings on the fit and tune patients and sets each threshold on dev at the 15% alert budget. It writes to a scratch folder, so the frozen models are not touched. The cell after it checks that the retrained thresholds match the frozen file that was committed before hospital B was opened.
 
 All four models share the same settings. The gap from M2 to M3 shows how much the model leans on what was measured and when. That is a care pattern, not a cause.
 """)
 
 code("""
-%run scripts/train_and_score_dev.py
+%run scripts/train_and_score_dev.py --check
 """)
 
 code("""
 frozen = json.loads((ROOT / "results" / "frozen.json").read_text())
-candidate = json.loads((ROOT / "results" / "a_dev_candidate.json").read_text())
+candidate = json.loads((ROOT / "data" / "retrain_check" / "a_dev_candidate.json").read_text())
 for name, spec in frozen["models"].items():
     same = np.isclose(spec["threshold"], candidate["models"][name]["threshold"], rtol=1e-6)
     print(f"{name:12s} frozen threshold {spec['threshold']:.6f}   retrained here {candidate['models'][name]['threshold']:.6f}   {'match' if same else 'DIFFERENT'}")

@@ -37,6 +37,14 @@ from train import BUDGET, SETTINGS_GRID, fit_model, score_rows, wide_target  # n
 
 OTHER_BUDGETS = [0.05, 0.10, 0.20]
 
+# With --check, retrain into data/retrain_check/ and leave the frozen models and
+# committed result files untouched. The notebook uses this to show that
+# retraining from scratch reproduces the frozen thresholds.
+CHECK = "--check" in sys.argv
+MODELS_OUT = ROOT / "data" / "retrain_check" / "models" if CHECK else ROOT / "models"
+RESULTS_OUT = ROOT / "data" / "retrain_check" if CHECK else ROOT / "results"
+MODELS_OUT.mkdir(parents=True, exist_ok=True)
+
 choice = json.loads((ROOT / "results" / "improvement_choice.json").read_text())
 settings = next(s for s in SETTINGS_GRID if s["name"] == choice["settings"])
 trees, smooth, extra = choice["trees"], choice["smooth"], choice["extra_inputs"]
@@ -52,8 +60,7 @@ print("training patients", fit_rows.pid.nunique(), "dev patients", dev_rows.pid.
 # hospital A's own average and spread, from the training patients' raw measurements
 raw = load_hospital("A")
 norms_A = site_norms(raw[raw.pid.isin(set(fit_rows.pid))])
-(ROOT / "results").mkdir(exist_ok=True)
-norms_A.to_csv(ROOT / "results" / "site_norms_A.csv")
+norms_A.to_csv(RESULTS_OUT / "site_norms_A.csv")
 
 candidate = {
     "budget": BUDGET, "settings": settings, "trees": trees, "smooth": smooth,
@@ -61,7 +68,6 @@ candidate = {
     "trained_on": "hospital A fit and tune patients", "models": {}, "other_budgets": {},
 }
 models = {}
-(ROOT / "models").mkdir(exist_ok=True)
 
 for name in ["T0", "M1", "M2", "M3", "M3 rescaled"]:
     columns = model_columns("M3" if name == "M3 rescaled" else name, extra=extra)
@@ -71,7 +77,7 @@ for name in ["T0", "M1", "M2", "M3", "M3 rescaled"]:
         check_rows = rescale_features(dev_rows, norms_A)
     target = wide_target(train_rows) if choice["wide_target"] else None
     model = fit_model(train_rows, columns, settings, trees, target)
-    joblib.dump(model, ROOT / "models" / f"{name.replace(' ', '_')}.joblib")
+    joblib.dump(model, MODELS_OUT / f"{name.replace(' ', '_')}.joblib")
     models[name] = model
 
     scores = score_rows(model, check_rows, columns, smooth)
@@ -85,11 +91,11 @@ for name in ["T0", "M1", "M2", "M3", "M3 rescaled"]:
             candidate["other_budgets"][str(budget)] = threshold_for_budget(dev_rows, scores, budget)
     print("trained:", name, flush=True)
 
-(ROOT / "results" / "a_dev_candidate.json").write_text(json.dumps(candidate, indent=2))
+(RESULTS_OUT / "a_dev_candidate.json").write_text(json.dumps(candidate, indent=2))
 
 numbers, tables, _ = evaluate_site(dev_rows, candidate, models, norms_A)
-(ROOT / "results" / "a_dev_results.json").write_text(json.dumps(numbers, indent=2))
-tables["M3"].to_csv(ROOT / "results" / "a_dev_patients_M3.csv")
+(RESULTS_OUT / "a_dev_results.json").write_text(json.dumps(numbers, indent=2))
+tables["M3"].to_csv(RESULTS_OUT / "a_dev_patients_M3.csv")
 
 print_table(numbers)
 for k in ["M3", "Modified SIRS"]:
