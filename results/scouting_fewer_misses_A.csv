@@ -1,0 +1,12 @@
+idea,utility,by onset %,in window %,missed,false alarm %,day 1 onset %,later onset %,late entry %
+"model only, 15% cap",0.356,61.1,17.5,557.0,15.0,36.8,80.6,36.4
+"model only, 25% cap",0.397,71.4,20.9,409.0,25.0,51.7,87.3,50.9
+SIRS>=2 in first 6h + model,,,,,39.9,,,
+SIRS>=3 in first 6h + model,0.375,70.3,19.8,426.0,25.0,50.9,85.8,52.1
+SIRS>=2 in first 12h + model,,,,,57.4,,,
+SIRS>=3 in first 12h + model,0.316,65.2,18.4,499.0,25.0,46.2,80.4,43.6
+SIRS>=2 in first 24h + model,,,,,72.9,,,
+SIRS>=3 in first 24h + model,,,,,33.4,,,
+day 1 gets 30% of the budget,0.376,64.0,17.2,516.0,25.0,30.9,90.6,23.0
+day 1 gets 50% of the budget,0.39,68.4,19.6,452.0,25.0,42.5,89.3,41.2
+day 1 gets 70% of the budget,0.396,70.3,20.4,425.0,25.0,49.1,87.4,47.9

@@ -1,0 +1,6 @@
+idea,utility,by onset %,missed,day 1 onset %,later onset %,AUROC all,AUROC day 1 rows
+frozen settings (baseline),0.397,71.4,409,51.7,87.3,0.8214,0.7647
+day 1 specialist for hours 1 to 24,0.388,71.3,411,50.8,87.8,0.8192,0.7592
+trained on half the patients,0.375,70.5,422,50.5,86.6,0.8086,0.7476
+average of 3 models,0.398,72.0,401,52.7,87.5,0.822,0.7658
+reward-window rows weigh 3x,0.392,71.4,409,51.9,87.2,0.8205,0.763
