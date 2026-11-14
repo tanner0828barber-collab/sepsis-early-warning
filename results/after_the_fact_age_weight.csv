@@ -1,0 +1,10 @@
+,frozen settings (baseline),40 and over count double,train only on 40 and over
+utility,0.3558,0.3554,0.3575
+all: alerted by onset,875 of 1432 (61.1%),868 of 1432 (60.6%),874 of 1432 (61.0%)
+all: false alarms,15.0%,15.0%,15.0%
+under 40: alerted by onset,79 of 129 (61.2%),85 of 129 (65.9%),85 of 129 (65.9%)
+under 40: false alarms,14.9%,15.4%,17.4%
+40 and over: alerted by onset,796 of 1303 (61.1%),783 of 1303 (60.1%),789 of 1303 (60.6%)
+40 and over: false alarms,15.0%,15.0%,14.7%
+80 and over: alerted by onset,109 of 195 (55.9%),108 of 195 (55.4%),108 of 195 (55.4%)
+80 and over: false alarms,15.2%,15.3%,14.2%
