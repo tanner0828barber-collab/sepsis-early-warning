@@ -6,7 +6,7 @@ An entry for the Veritas AI International High School Hackathon, Health track, b
 
 ## The question
 
-Can a sepsis early warning model trained at one hospital travel to another? We trained on public intensive care data from hospital A, froze the model and its alert threshold, and scored hospital B exactly once.
+Can a sepsis early warning model trained at one hospital travel to another? I trained on public intensive care data from hospital A, froze the model and its alert threshold, and scored hospital B exactly once.
 
 **The user:** an intensive care nurse deciding which patient to look at first.
 
@@ -30,7 +30,7 @@ The alert line was set on hospital A dev, so its 15.0% false alarm share is true
 - **It travels only partly.** Utility fell by about a third.
 - **It got quieter, not noisier.** Hospital B measures lab values less often and its blood pressures read higher, so the model scored everyone lower there.
 - **Time in the unit explains a lot.** A model that sees only hours in the unit scored 0.242 at hospital B, about the same as the full model.
-- **Most alerts are very early.** We count an alert more than 12 hours before onset separately and never call it a catch.
+- **Most alerts are very early.** I count an alert more than 12 hours before onset separately and never call it a catch.
 - **The bedside rule (modified SIRS)** alerted by onset on 966 of 1,142 sepsis patients at hospital B, but raised a false alarm on 67% of everyone else.
 
 Hospital B is a site-held-out evaluation set, not a blinded test. The full disclosure is in [DEFINITIONS.md](DEFINITIONS.md).

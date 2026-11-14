@@ -77,7 +77,7 @@ SEEN_TABLE = [
     ("Glucose", "Glucose", "mg/dL", "lab"),
     ("PaCO2", "Carbon dioxide in arterial blood", "mm Hg", "lab"),
 ]
-STALE_AFTER = {"vital": 4, "lab": 24}  # hours; our own choice, not a clinical standard
+STALE_AFTER = {"vital": 4, "lab": 24}  # hours; my own choice, not a clinical standard
 
 CSS = f"""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
@@ -319,7 +319,7 @@ def seen_table(pid, hour):
         '<table class="plain"><thead><tr><th>Input</th><th class="num">Latest value</th><th>How old</th></tr></thead>'
         f'<tbody>{"".join(lines)}</tbody></table>'
         '<p class="caption">"Stale" means a vital sign older than 4 hours or a lab older than 24 hours. '
-        "That cutoff is our own choice for this display. Units are as listed in the dataset's description. "
+        "That cutoff is my own choice for this display. Units are as listed in the dataset's description. "
         "The model also sees trends, time in the unit, and how long ago each value was measured.</p>"
     )
 

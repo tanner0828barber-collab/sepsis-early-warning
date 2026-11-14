@@ -18,7 +18,7 @@ A retrospective risk-prioritization demo. Every hour it gives each intensive car
 
 ## The label and the six hour shift
 
-The challenge defines a sepsis time from clinical suspicion of infection (the earlier of antibiotics being ordered and blood cultures being drawn) and organ damage (a two point rise in the SOFA score). The label in the data switches on 6 hours before that time. We call the challenge's time "onset," so onset is the first labeled hour plus 6.
+The challenge defines a sepsis time from clinical suspicion of infection (the earlier of antibiotics being ordered and blood cultures being drawn) and organ damage (a two point rise in the SOFA score). The label in the data switches on 6 hours before that time. I call the challenge's time "onset," so onset is the first labeled hour plus 6.
 
 Because the label is built partly from when staff ordered antibiotics and cultures, it depends on how quickly a hospital's clinicians act. The model partly learns that.
 
@@ -39,7 +39,7 @@ Before any modeling, hospital B was summarized: patient and row counts, sepsis p
 
 So hospital B is a **site-held-out evaluation set, not a blinded test**. A truly unseen hospital is future work.
 
-Our hospital A to hospital B test is also not the challenge's hidden hospital C test. Our numbers are not comparable to the challenge leaderboard.
+My hospital A to hospital B test is also not the challenge's hidden hospital C test. My numbers are not comparable to the challenge leaderboard.
 
 ## What the measurement signals do and do not mean
 

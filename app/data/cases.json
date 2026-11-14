@@ -10,7 +10,7 @@
       "sepsis": true
     },
     {
-      "label": "One we miss",
+      "label": "One it misses",
       "pid": "p100072",
       "rule": "the first missed sepsis patient by ID",
       "outcome": "missed",

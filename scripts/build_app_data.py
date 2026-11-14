@@ -4,7 +4,7 @@ Patients are chosen by a written rule, never by eye:
 
   Typical catch   the caught patient with the median hours of warning
                   (ties broken by lowest patient ID)
-  One we miss     the first missed patient by ID, among those with history
+  One it misses   the first missed patient by ID, among those with history
   A false alarm   the first false alarm by ID
   Late entry      the first late-entry case by ID
 
@@ -46,7 +46,7 @@ late_entry = patients[patients.sepsis & patients.late_entry].index[0]
 cases = [
     {"label": "Typical catch", "pid": typical,
      "rule": f"the caught patient whose warning time is closest to the median ({median_warning:g} hours)"},
-    {"label": "One we miss", "pid": missed, "rule": "the first missed sepsis patient by ID"},
+    {"label": "One it misses", "pid": missed, "rule": "the first missed sepsis patient by ID"},
     {"label": "A false alarm", "pid": false_alarm, "rule": "the first false alarm by ID"},
     {"label": "Late entry", "pid": late_entry,
      "rule": "the first patient by ID whose sepsis label is already on in their first recorded hour"},
