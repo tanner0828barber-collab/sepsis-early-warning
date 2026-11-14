@@ -129,6 +129,31 @@ Version 1 above stays the result of record. Version 2 is "the best model we coul
 - Sat 11/14, 4:45 PM. PLAN, written before running: run it backwards, once (script scripts/v2_reverse.py). Train on hospital B, test on hospital A. After-the-fact. Purpose: check whether the version 1 finding (the model gets quieter when it travels) is about travel in general or about the direction A to B.
   - Mirror of version 1: hospital B is cut by patient, 80% to train and 20% to set the cutoff (seed 2026, same share of sepsis in each). Same 100 inputs, same settings, 200 trees. Cutoffs set on the 20% at the 15% budget (the mirror of version 1) and at the 25% cap. Then all 20,336 hospital A patients are scored once. Nothing is tuned on hospital A.
   - Claude's guess, logged in advance: the mirror image of version 1. A model raised at hospital B, where labs are rarer and blood pressures read higher, should see hospital A patients as sicker, so false alarms at A should land above the budget (25% to 40% at the 15% budget) and utility at A should be 0.25 to 0.35.
+- Sat 11/14, 4:47 PM. RESULT of the per-hospital alert line at the 25% cap (results/after_the_fact_v2_alert_line.csv). Frozen version 1 model, not retrained. A second look at hospital B, after-the-fact.
+
+  | Frozen model, 25% cap | Utility | Timely | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | Hospital A dev (calibration set, cutoff set here) | 0.420 | 78 of 358 | 74.3% | 92 | 927 of 3,710 (25.0%) |
+  | Hospital B, 18,000 patients, hospital A's cutoff unchanged | 0.265 | 142 of 1,024 | 52.7% | 484 | 2,585 of 16,976 (15.2%) |
+  | Hospital B, same 18,000, its own line from a 2,000 patient burn-in, no labels | 0.271 | 171 of 1,024 | 62.6% | 383 | 4,747 of 16,976 (28.0%) |
+
+  - Hospital A's 25% cutoff alerts on 29.6% of all hospital A dev patients. The burn-in cutoff that alerts on the same share at hospital B is lower (0.028 against 0.039), which fits the version 1 finding that hospital B scores run lower.
+  - What the label-free line buys: 101 fewer missed sepsis patients out of 1,024. What it costs: false alarms go from 15.2% to 28.0%, over the 25% cap. Utility barely moves, 0.265 to 0.271. So moving the line trades alarms for catches and does not make the model better at hospital B.
+  - Put next to the both-hospitals result: with the line moved but no hospital B labels, utility at B is 0.271. With hospital B's labeled patients in training it is 0.406. The gap is in how the model ranks hospital B patients, not in where the line sits. A new hospital needs its own labeled data.
+  - Guess against result: unchanged cutoff guessed at about 14% false alarms and utility near 0.26 (right: 15.2%, 0.265). Burn-in guessed at 25% to 30% false alarms (right: 28.0%), 62% to 70% by onset (right: 62.6%), utility 0.28 to 0.32 (wrong, a little low: 0.271).
+- Sat 11/14, 4:47 PM. RESULT of the backwards run (results/after_the_fact_v2_reverse.csv). Trained on 16,000 hospital B patients, cutoff set on 4,000 others, scored once on all 20,336 hospital A patients. After-the-fact.
+
+  | Trained at hospital B | Utility | Timely | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | 15% budget, hospital B calibration set | 0.380 | 58 of 228 | 70.2% | 68 | 563 of 3,772 (14.9%) |
+  | 15% budget, hospital A | 0.330 | 338 of 1,790 | 76.4% | 422 | 8,348 of 18,546 (45.0%) |
+  | 25% cap, hospital B calibration set | 0.399 | 65 of 228 | 80.7% | 44 | 942 of 3,772 (25.0%) |
+  | 25% cap, hospital A | 0.329 | 382 of 1,790 | 86.1% | 248 | 11,914 of 18,546 (64.2%) |
+
+  - It is the mirror image of version 1. Going A to B the model got quieter: a 15% budget delivered 7.2% false alarms. Going B to A it got much noisier: a 15% budget delivered 45.0%. Same cause in both directions: hospital A patients score higher than hospital B patients whichever hospital the model was raised at.
+  - So an alert budget set at one hospital does not hold at another, in either direction. Too quiet one way, three times over budget the other way.
+  - Utility fell less in this direction (0.380 to 0.330, down 13%, against 35% for A to B), because the utility score punishes misses much more than false alarms.
+  - Guess against result: false alarms at A guessed at 25% to 40% (wrong, it was worse: 45.0%). Utility at A guessed at 0.25 to 0.35 (right: 0.330).
 
 ## Why no new outside data
 
