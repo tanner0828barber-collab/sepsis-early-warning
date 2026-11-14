@@ -62,6 +62,25 @@ Added at 2:52 PM, after steps 1 and 2 came back and before running it:
 
 7. Grade each patient against other patients at the same hour of their stay. The first model alerts by onset on 84% of sepsis patients whose label starts at hour 24 or later and only 34% of the earlier ones, because its score climbs with time in the unit. Replacing the score with "the share of all patients at this same hour who score lower" might spend the alert budget more evenly across the stay. It needs no sepsis labels. Same data, yardstick and keep rule. Honest note: this idea came from looking at dev results for the first model, so it is not a blind idea. It is still judged only by cross-validation.
 
+## Improvement round results (finished 3:04 PM)
+
+All numbers are 3-fold cross-validation on 16,268 fit and tune patients (1,432 with sepsis), at the 15% budget. Full log: results/improvement_log.csv, results/improvement_settings.csv, results/improvement_hour_adjust.csv.
+
+| Step | Sepsis patients alerted by onset | Utility | Kept? |
+|---|---|---|---|
+| 1. Baseline: first model's settings | 59.4% | 0.343 | starting point |
+| 2. 64 added inputs (164 in all) | 60.3% | 0.347 | No. Gain of 0.8 points, under the 1.5 point rule |
+| 3. Settings: "slow careful," 200 trees | 61.1% | 0.356 | Yes. Gain of 1.7 points |
+| 4. Wider training target | 60.3% | 0.365 | No. Lower than step 3 |
+| 5. Smoothing over 2 hours | 61.5% | 0.366 | No. Gain of 0.4 points |
+| 5. Smoothing over 3 hours | 60.8% | 0.369 | No |
+| 7. Same-hour grading | 46.3% | 0.086 | No. Much worse |
+
+- Sat 11/14, 3:04 PM. Final choice by the rules: the original 100 inputs, "slow careful" settings (learning rate 0.03, 31 leaves, at least 200 rows per leaf, L2 of 10, no class weighting), 200 trees, the challenge's own label, no smoothing.
+- Sat 11/14, 3:04 PM. What the round taught us. The model is on a plateau: five reasonable ideas moved the yardstick by less than 2 points each. The added inputs did not help because the trees can already build those combinations from the raw values. Same-hour grading made things much worse, which confirms that a large part of the model's skill is time in the unit: take time away and it drops from 61% to 46%.
+- Sat 11/14, 3:07 PM. Final models trained on fit and tune patients together (16,268) and scored on dev. This was the second and last look at dev. M3: alerted by onset on 222 of 358 sepsis patients (60 caught inside the 12 hour window, 162 very early), 136 missed, 556 of 3,710 false alarms, utility 0.368, hourly AUROC 0.834. The first model had 219, 139, 556, 0.358 and 0.824. The gain is real in cross-validation and small on dev, inside the dev range (57% to 67%).
+- Sat 11/14, 3:07 PM. On dev, M2 (no measurement signals) scores utility 0.367 and M3 scores 0.368. At hospital A the measurement signals add almost nothing to utility. M1 (body signals only) scores 0.197 and T0 (time only) 0.312.
+
 ## Why no new outside data
 
 The other open intensive care datasets either need a credentialed application that takes days, or have no ready-made hourly sepsis label. Building that label ourselves is days of careful work and easy to get wrong. A third hospital is listed as future work.

@@ -1,3 +1,11 @@
 [ 0.4 min] pool patients 16268 rows 631782
 [ 1.7 min] 1 baseline | current inputs, base weighted, 150 trees | {'alerted_by_onset': 0.5943, 'caught_in_window': 0.148, 'utility': 0.343, 'hourly_auroc': 0.8149} | kept: True
 [ 3.3 min] 2 inputs | added inputs (164 in all) | {'alerted_by_onset': 0.6027, 'caught_in_window': 0.1676, 'utility': 0.3465, 'hourly_auroc': 0.8155} | kept: False
+[ 7.1 min] settings searched: base weighted
+[11.3 min] settings searched: slow careful
+[15.8 min] settings searched: slow careful weighted
+[15.8 min] 3 settings | slow careful, 200 trees | {'alerted_by_onset': 0.611, 'caught_in_window': 0.1746, 'utility': 0.3558, 'hourly_auroc': 0.8214} | kept: True
+[17.3 min] 4 target | train on the 12 hours before onset | {'alerted_by_onset': 0.6027, 'caught_in_window': 0.1487, 'utility': 0.3652, 'hourly_auroc': 0.8172} | kept: False
+[17.4 min] 5 smoothing | alert on the average of the last 2 hourly scores | {'alerted_by_onset': 0.6145, 'caught_in_window': 0.1725, 'utility': 0.3662, 'hourly_auroc': 0.8213} | kept: False
+[17.4 min] 5 smoothing | alert on the average of the last 3 hourly scores | {'alerted_by_onset': 0.6082, 'caught_in_window': 0.1662, 'utility': 0.369, 'hourly_auroc': 0.8207} | kept: False
+[17.4 min] FINAL CHOICE: {"extra_inputs": false, "settings": "slow careful", "trees": 200, "wide_target": false, "smooth": 1, "cross_validated": {"alerted_by_onset": 0.6110335195530726, "caught_in_window": 0.17458100558659218, "utility": 0.35584962398848613, "hourly_auroc": 0.82138852968709}}

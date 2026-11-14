@@ -1,0 +1,13 @@
+{
+  "extra_inputs": false,
+  "settings": "slow careful",
+  "trees": 200,
+  "wide_target": false,
+  "smooth": 1,
+  "cross_validated": {
+    "alerted_by_onset": 0.6110335195530726,
+    "caught_in_window": 0.17458100558659218,
+    "utility": 0.35584962398848613,
+    "hourly_auroc": 0.82138852968709
+  }
+}
