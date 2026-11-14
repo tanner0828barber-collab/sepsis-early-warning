@@ -37,6 +37,26 @@ Sat 11/14, 2:20 PM. Tanner read the evidence summary and the prediction below an
 - Sat 11/14, 2:36 PM. Fixed a flaw found on dev: when many patients tie on their top score (the time-only model T0), the threshold let more than 15% through. The cutoff now leaves tied patients out, so the budget is never exceeded. Test added. M3's numbers did not change.
 - Sat 11/14, 2:37 PM. Hospital A dev scored (results/a_dev_results.json). M3 at the 15% budget: alerted by onset on 219 of 358 sepsis patients (58 caught inside the 12 hour window, 161 very early), 139 missed, 556 of 3,710 false alarms, utility 0.358. Modified SIRS: 313 of 358 alerted by onset but 2,916 of 3,710 false alarms, utility 0.090.
 - Sat 11/14, 2:38 PM. Found on hospital A dev: time in the unit alone (T0) scores utility 0.312, more than body signals alone (M1, 0.177). Only 1 of 3,710 dev patients without sepsis has a stay of 72 hours or more, while a quarter of sepsis patients have their label start after hour 71. So in this dataset a long stay nearly gives the answer away. The model alerts by onset on 84% of sepsis patients whose label starts at hour 24 or later and only 34% of those whose label starts earlier.
+- Sat 11/14, 2:40 PM. Tanner chose to improve the model before freezing. Nothing was frozen and hospital B is still unopened.
+
+## Improvement plan (written at 2:45 PM, before any of it was run)
+
+What the research says helped on this dataset: the first place team (Morrill et al.) added shock index, the BUN to creatinine ratio, a partial SOFA score, counts of measurements in a look-back window, and the highest and lowest of each vital sign over a window. Yang et al. 2020 used 168 inputs and found time in the unit was their single most important input, which matches what we saw on dev.
+
+Rules, fixed now:
+1. **Every choice is made by 3-fold cross-validation over the fit and tune patients together** (16,268 patients, 1,432 with sepsis), split by patient. That is about seven times more sepsis patients than the tune pile alone, so the yardstick is much less noisy.
+2. **Dev is not used to choose anything.** We already looked at dev once, for the first model. It gets scored one more time, for the final model only.
+3. **Yardstick:** share of sepsis patients alerted at or before onset at the 15% budget. Same yardstick as the first search.
+4. **Keep rule:** a change is kept only if it raises the yardstick by at least 1.5 percentage points and does not lower the official utility score by more than 0.01. Otherwise the simpler version stays.
+5. **Time box:** improvement stops at 3:35 PM. Whatever is best by the rules at that point gets frozen.
+
+Steps, in order:
+1. Measure the current model under cross-validation (the baseline).
+2. New inputs. Body signals: shock index, pulse pressure, BUN to creatinine ratio, partial SOFA (4 of 6 parts: platelets, bilirubin, blood pressure, creatinine), partial qSOFA (2 of 3 parts), SIRS count, spread of each vital over 6 hours, 24 hour mean, lowest and highest of each vital, and the change between each lab's last two measurements. Measurement signals: how many different labs so far, labs per hour so far, hours since any lab, and empty vital cells in the last 6 hours.
+3. Settings: the current pick, "slow careful," and "slow careful" with weighting, each checked every 50 trees up to 600. Among tries within 0.5 points of the best, the smallest model wins.
+4. A wider training target: teach the model to recognize the 12 hours before onset, not only the 6 the label marks.
+5. Alert smoothing: alert on the average of the last 2 or 3 hourly scores, so one noisy hour cannot fire an alert.
+6. Retrain the winner on fit and tune together, score dev once, freeze.
 
 ## Why no new outside data
 
