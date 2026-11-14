@@ -92,6 +92,19 @@ All numbers are 3-fold cross-validation on 16,268 fit and tune patients (1,432 w
 - Sat 11/14, 4:20 PM. Tanner asked whether limiting the tool to patients 40 and over would give a higher utility. On hospital A at the 25% cap: 0.399 for 40 and over only against 0.397 for all ages. No real gain, and it would drop 11% of patients, so the model stays all ages.
 - Sat 11/14, 4:22 PM. Tanner shared a review of sepsis biomarkers (Faix, 2013). The markers it covers that exist in this dataset (lactate, bilirubin, creatinine, platelets, fibrinogen, white cells) are already model inputs. The others (procalcitonin, C-reactive protein, IL-6, CD64 and more) are not in the data.
 
+## Version 2 (everything here is after-the-fact: hospital B has been scored)
+
+Version 1 above stays the result of record. Version 2 is "the best model we could build" and can never replace it. Each step is written here before it runs.
+
+- Sat 11/14, 4:29 PM. PLAN, written before running: one model trained on both hospitals (script scripts/v2_both_hospitals.py). Why: training on half of hospital A's patients scored lower than training on all of them, so more data should help, and this is how the top challenge teams trained. What it can and cannot claim: it has seen both hospitals, so it says nothing about travel. It answers "what do you get when a hospital has its own labeled data?"
+  - Patients: hospital A fit and tune (16,268) plus all of hospital B (20,000). Hospital A dev stays out, so the hospital A side is the same patients as every earlier cross-validation number.
+  - Same 100 inputs, same "slow careful" settings, 200 trees. No hospital name is given to the model.
+  - Nested cross-validation, the method the outside review asked for: 3 outer folds by patient, balanced by hospital and by sepsis. Inside each outer training set, 2 inner folds produce held-out scores, and the alert cutoff is set on those. The outer fold is then scored once with that cutoff. No patient is scored with a cutoff that saw them.
+  - Cutoff: the 25% cap Tanner chose, applied at each hospital separately (each hospital's cutoff is set on that hospital's inner-fold patients). Reason: a cap is a promise to the nurses at one hospital, and one shared cutoff could break it at one site. The single shared cutoff and the 15% budget are also reported, for comparison only.
+  - Baseline, run in the same script on the same folds: a hospital A only model, nested, scored on the same hospital A patients.
+  - Keep rule, hospital A patients, 25% cap: the both-hospitals model is "better at A" only if it alerts by onset on at least 1.5 points more sepsis patients than the A only model and its utility is not lower by more than 0.01. The hospital B number is reported whatever it is.
+  - Claude's expectation, logged in advance and labeled a guess: at hospital A, utility 0.39 to 0.42 at the 25% cap, a gain of under 0.02 over the A only model. At hospital B, utility 0.30 to 0.38, lower than A because 45% of B's sepsis patients have their label start in the first day. If any utility comes back at 0.50 or more, treat it as a leak until proven otherwise.
+
 ## Why no new outside data
 
 The other open intensive care datasets either need a credentialed application that takes days, or have no ready-made hourly sepsis label. Building that label ourselves is days of careful work and easy to get wrong. A third hospital is listed as future work.
