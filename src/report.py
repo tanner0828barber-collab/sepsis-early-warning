@@ -9,6 +9,7 @@ import pandas as pd
 
 from bootstrap import bootstrap_ranges
 from evaluate import evaluate_alerts
+from metrics import cutoff_alerting_at_most
 from rescale import rescale_features
 from sirs import sirs_alert
 from train import score_rows
@@ -25,7 +26,7 @@ def threshold_for_share_of_all(rows, scores, share):
     top = pd.Series(np.asarray(scores)).groupby(rows["pid"].to_numpy(), sort=False).max()
     top = np.sort(top.to_numpy())[::-1]
     allowed = int(np.floor(share * len(top)))
-    return float((top[allowed - 1] + top[allowed]) / 2)
+    return cutoff_alerting_at_most(top, allowed)
 
 
 def evaluate_site(features, frozen, models, site_norms, with_ranges=True):

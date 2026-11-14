@@ -33,10 +33,24 @@ def threshold_for_budget(rows, scores, budget):
     )
     top_scores = np.sort(per_patient.loc[per_patient.sepsis == 0, "top"].to_numpy())[::-1]
     allowed = int(np.floor(budget * len(top_scores)))
-    if allowed < 1:
+    return cutoff_alerting_at_most(top_scores, allowed)
+
+
+def cutoff_alerting_at_most(top_scores, allowed):
+    """A cutoff that alerts on at most `allowed` patients, given each patient's top score.
+
+    `top_scores` must be sorted from highest to lowest. The cutoff sits halfway
+    between the last patient we may alert and the first one we may not. If
+    several patients are tied at that edge, none of the tied ones is alerted,
+    so the budget is never exceeded.
+    """
+    if allowed < 1 or allowed >= len(top_scores):
+        return float("inf") if allowed < 1 else float("-inf")
+    first_not_allowed = top_scores[allowed]
+    above = top_scores[top_scores > first_not_allowed]
+    if len(above) == 0:
         return float("inf")
-    # the cutoff sits halfway between the last patient we may alert and the next one
-    return float((top_scores[allowed - 1] + top_scores[allowed]) / 2)
+    return float((above.min() + first_not_allowed) / 2)
 
 
 def patient_outcomes(rows, alert_on):

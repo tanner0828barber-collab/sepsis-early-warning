@@ -1,0 +1,549 @@
+{
+  "T0": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 30,
+    "very_early": 115,
+    "missed": 213,
+    "missed_but_alerted_after_onset": 1,
+    "alerted_by_onset_share": 0.40502793296089384,
+    "caught_share": 0.08379888268156424,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 555,
+    "false_alarm_share": 0.1495956873315364,
+    "false_alerts_per_true_alert": 3.8275862068965516,
+    "median_hours_of_warning": 43.0,
+    "alerts_per_1000_patient_days": 106.18999829580959,
+    "repeat_alerts_per_alerted_patient": 0.0,
+    "utility": 0.3120927932126654,
+    "hourly_auroc": 0.7046302664080104,
+    "hourly_auprc": 0.08036022873685299,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 0,
+      "very_early": 0,
+      "missed": 38
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 30,
+      "very_early": 115,
+      "missed": 175
+    },
+    "ranges": {
+      "caught_share": [
+        0.05649717514124294,
+        0.11452965823200789
+      ],
+      "alerted_by_onset_share": [
+        0.35142261904761907,
+        0.4527955426356589
+      ],
+      "false_alarm_share": [
+        0.1377320729115998,
+        0.1607864260705629
+      ],
+      "utility": [
+        0.26660683487719855,
+        0.3541798606639637
+      ]
+    }
+  },
+  "M1": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 48,
+    "very_early": 132,
+    "missed": 178,
+    "missed_but_alerted_after_onset": 15,
+    "alerted_by_onset_share": 0.5027932960893855,
+    "caught_share": 0.1340782122905028,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 556,
+    "false_alarm_share": 0.14986522911051212,
+    "false_alerts_per_true_alert": 3.088888888888889,
+    "median_hours_of_warning": 35.5,
+    "alerts_per_1000_patient_days": 254.34095169566947,
+    "repeat_alerts_per_alerted_patient": 1.2356857523302263,
+    "utility": 0.17749222443098053,
+    "hourly_auroc": 0.7686627813502963,
+    "hourly_auprc": 0.07556432695438432,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 7,
+      "very_early": 0,
+      "missed": 31
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 41,
+      "very_early": 132,
+      "missed": 147
+    },
+    "ranges": {
+      "caught_share": [
+        0.10109289617486339,
+        0.1675981621381412
+      ],
+      "alerted_by_onset_share": [
+        0.4479685561238387,
+        0.553427161200329
+      ],
+      "false_alarm_share": [
+        0.13748590441422803,
+        0.16231568291265933
+      ],
+      "utility": [
+        0.14288983095123384,
+        0.21060696669807522
+      ]
+    }
+  },
+  "M2": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 58,
+    "very_early": 152,
+    "missed": 148,
+    "missed_but_alerted_after_onset": 16,
+    "alerted_by_onset_share": 0.5865921787709497,
+    "caught_share": 0.16201117318435754,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 556,
+    "false_alarm_share": 0.14986522911051212,
+    "false_alerts_per_true_alert": 2.6476190476190475,
+    "median_hours_of_warning": 33.5,
+    "alerts_per_1000_patient_days": 196.32273579367936,
+    "repeat_alerts_per_alerted_patient": 0.6572890025575447,
+    "utility": 0.34367159040109574,
+    "hourly_auroc": 0.8161118348653909,
+    "hourly_auprc": 0.11420396465642207,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 11,
+      "very_early": 0,
+      "missed": 27
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 47,
+      "very_early": 152,
+      "missed": 121
+    },
+    "ranges": {
+      "caught_share": [
+        0.12496488764044944,
+        0.1989250877042868
+      ],
+      "alerted_by_onset_share": [
+        0.5358969643286091,
+        0.638821627200701
+      ],
+      "false_alarm_share": [
+        0.1375373742864909,
+        0.16127371547701133
+      ],
+      "utility": [
+        0.3006266852085191,
+        0.38343492816465036
+      ]
+    }
+  },
+  "M3": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 58,
+    "very_early": 161,
+    "missed": 139,
+    "missed_but_alerted_after_onset": 15,
+    "alerted_by_onset_share": 0.611731843575419,
+    "caught_share": 0.16201117318435754,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 556,
+    "false_alarm_share": 0.14986522911051212,
+    "false_alerts_per_true_alert": 2.538812785388128,
+    "median_hours_of_warning": 34.0,
+    "alerts_per_1000_patient_days": 215.71263562515384,
+    "repeat_alerts_per_alerted_patient": 0.8025316455696202,
+    "utility": 0.35791871558062344,
+    "hourly_auroc": 0.8241435915921711,
+    "hourly_auprc": 0.11765184723288757,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 10,
+      "very_early": 0,
+      "missed": 28
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 48,
+      "very_early": 161,
+      "missed": 111
+    },
+    "ranges": {
+      "caught_share": [
+        0.1257655565293602,
+        0.20064011715797428
+      ],
+      "alerted_by_onset_share": [
+        0.5580030811729707,
+        0.6598271863019567
+      ],
+      "false_alarm_share": [
+        0.13843534317275558,
+        0.1621699983711495
+      ],
+      "utility": [
+        0.3166231302836366,
+        0.39995370662745783
+      ]
+    }
+  },
+  "M3 at 5% budget": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 40,
+    "very_early": 120,
+    "missed": 198,
+    "missed_but_alerted_after_onset": 9,
+    "alerted_by_onset_share": 0.44692737430167595,
+    "caught_share": 0.11173184357541899,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 185,
+    "false_alarm_share": 0.04986522911051213,
+    "false_alerts_per_true_alert": 1.15625,
+    "median_hours_of_warning": 35.5,
+    "alerts_per_1000_patient_days": 111.03747325367821,
+    "repeat_alerts_per_alerted_patient": 1.0706214689265536,
+    "utility": 0.2863597021029704,
+    "hourly_auroc": 0.8241435915921711,
+    "hourly_auprc": 0.11765184723288757,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 3,
+      "very_early": 0,
+      "missed": 35
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 37,
+      "very_early": 120,
+      "missed": 163
+    },
+    "ranges": {
+      "caught_share": [
+        0.0798941653871463,
+        0.1466703601108033
+      ],
+      "alerted_by_onset_share": [
+        0.39600847181492344,
+        0.5000328083989501
+      ],
+      "false_alarm_share": [
+        0.04245291611422073,
+        0.05726011221533609
+      ],
+      "utility": [
+        0.24649118727284555,
+        0.3279081044030078
+      ]
+    }
+  },
+  "M3 at 10% budget": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 53,
+    "very_early": 144,
+    "missed": 161,
+    "missed_but_alerted_after_onset": 11,
+    "alerted_by_onset_share": 0.5502793296089385,
+    "caught_share": 0.14804469273743018,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 371,
+    "false_alarm_share": 0.1,
+    "false_alerts_per_true_alert": 1.883248730964467,
+    "median_hours_of_warning": 30.0,
+    "alerts_per_1000_patient_days": 147.0905682528261,
+    "repeat_alerts_per_alerted_patient": 0.6770293609671848,
+    "utility": 0.3320857547771004,
+    "hourly_auroc": 0.8241435915921711,
+    "hourly_auprc": 0.11765184723288757,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 7,
+      "very_early": 0,
+      "missed": 31
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 46,
+      "very_early": 144,
+      "missed": 130
+    },
+    "ranges": {
+      "caught_share": [
+        0.11324507820403082,
+        0.18563591127603946
+      ],
+      "alerted_by_onset_share": [
+        0.49844160674435906,
+        0.6011221151397773
+      ],
+      "false_alarm_share": [
+        0.09081015069188678,
+        0.10991756291525927
+      ],
+      "utility": [
+        0.29194402965655436,
+        0.37420107082887727
+      ]
+    }
+  },
+  "M3 at 20% budget": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 71,
+    "very_early": 176,
+    "missed": 111,
+    "missed_but_alerted_after_onset": 13,
+    "alerted_by_onset_share": 0.6899441340782123,
+    "caught_share": 0.19832402234636873,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 742,
+    "false_alarm_share": 0.2,
+    "false_alerts_per_true_alert": 3.0040485829959516,
+    "median_hours_of_warning": 31.0,
+    "alerts_per_1000_patient_days": 297.21080835432014,
+    "repeat_alerts_per_alerted_patient": 0.9580838323353293,
+    "utility": 0.38592978684953916,
+    "hourly_auroc": 0.8241435915921711,
+    "hourly_auprc": 0.11765184723288757,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 15,
+      "very_early": 0,
+      "missed": 23
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 56,
+      "very_early": 176,
+      "missed": 88
+    },
+    "ranges": {
+      "caught_share": [
+        0.15586341046113736,
+        0.23988475798446895
+      ],
+      "alerted_by_onset_share": [
+        0.6358269150304514,
+        0.7356337498825519
+      ],
+      "false_alarm_share": [
+        0.18741286907049645,
+        0.21287023940090294
+      ],
+      "utility": [
+        0.34473993390504837,
+        0.42705932811402963
+      ]
+    }
+  },
+  "M3, same share of patients alerted": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 58,
+    "very_early": 161,
+    "missed": 139,
+    "missed_but_alerted_after_onset": 15,
+    "alerted_by_onset_share": 0.611731843575419,
+    "caught_share": 0.16201117318435754,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 556,
+    "false_alarm_share": 0.14986522911051212,
+    "false_alerts_per_true_alert": 2.538812785388128,
+    "median_hours_of_warning": 34.0,
+    "alerts_per_1000_patient_days": 215.71263562515384,
+    "repeat_alerts_per_alerted_patient": 0.8025316455696202,
+    "utility": 0.35791871558062344,
+    "hourly_auroc": 0.8241435915921711,
+    "hourly_auprc": 0.11765184723288757,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 10,
+      "very_early": 0,
+      "missed": 28
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 48,
+      "very_early": 161,
+      "missed": 111
+    },
+    "ranges": {
+      "caught_share": [
+        0.1257655565293602,
+        0.20064011715797428
+      ],
+      "alerted_by_onset_share": [
+        0.5580030811729707,
+        0.6598271863019567
+      ],
+      "false_alarm_share": [
+        0.13843534317275558,
+        0.1621699983711495
+      ],
+      "utility": [
+        0.3166231302836366,
+        0.39995370662745783
+      ]
+    },
+    "threshold_used": 0.6678161473855265
+  },
+  "M3 rescaled": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 58,
+    "very_early": 161,
+    "missed": 139,
+    "missed_but_alerted_after_onset": 15,
+    "alerted_by_onset_share": 0.611731843575419,
+    "caught_share": 0.16201117318435754,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 556,
+    "false_alarm_share": 0.14986522911051212,
+    "false_alerts_per_true_alert": 2.538812785388128,
+    "median_hours_of_warning": 34.0,
+    "alerts_per_1000_patient_days": 215.71263562515384,
+    "repeat_alerts_per_alerted_patient": 0.8025316455696202,
+    "utility": 0.35791871558062344,
+    "hourly_auroc": 0.8241435803099857,
+    "hourly_auprc": 0.11765183801515404,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 10,
+      "very_early": 0,
+      "missed": 28
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 48,
+      "very_early": 161,
+      "missed": 111
+    },
+    "ranges": {
+      "caught_share": [
+        0.1257655565293602,
+        0.20064011715797428
+      ],
+      "alerted_by_onset_share": [
+        0.5580030811729707,
+        0.6598271863019567
+      ],
+      "false_alarm_share": [
+        0.13843534317275558,
+        0.1621699983711495
+      ],
+      "utility": [
+        0.3166231302836366,
+        0.39995370662745783
+      ]
+    }
+  },
+  "Modified SIRS": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 84,
+    "very_early": 229,
+    "missed": 45,
+    "missed_but_alerted_after_onset": 9,
+    "alerted_by_onset_share": 0.8743016759776536,
+    "caught_share": 0.2346368715083799,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 2916,
+    "false_alarm_share": 0.7859838274932615,
+    "false_alerts_per_true_alert": 9.31629392971246,
+    "median_hours_of_warning": 30.0,
+    "alerts_per_1000_patient_days": 1688.5876048550492,
+    "repeat_alerts_per_alerted_patient": 2.442557134033354,
+    "utility": 0.08962211210135346,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 23,
+      "very_early": 0,
+      "missed": 15
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 61,
+      "very_early": 229,
+      "missed": 30
+    },
+    "ranges": {
+      "caught_share": [
+        0.1923018292682927,
+        0.2801196381004868
+      ],
+      "alerted_by_onset_share": [
+        0.8375920810313076,
+        0.9058848667672197
+      ],
+      "false_alarm_share": [
+        0.7728341940798259,
+        0.7991929444926896
+      ],
+      "utility": [
+        0.033334122708770626,
+        0.145332745407656
+      ]
+    }
+  },
+  "Never alert": {
+    "patients": 4068,
+    "sepsis_patients": 358,
+    "caught": 0,
+    "very_early": 0,
+    "missed": 358,
+    "missed_but_alerted_after_onset": 0,
+    "alerted_by_onset_share": 0.0,
+    "caught_share": 0.0,
+    "non_sepsis_patients": 3710,
+    "false_alarms": 0,
+    "false_alarm_share": 0.0,
+    "false_alerts_per_true_alert": NaN,
+    "median_hours_of_warning": NaN,
+    "alerts_per_1000_patient_days": 0.0,
+    "repeat_alerts_per_alerted_patient": NaN,
+    "utility": 0.0,
+    "late_entry": {
+      "sepsis_patients": 38,
+      "caught": 0,
+      "very_early": 0,
+      "missed": 38
+    },
+    "with_history": {
+      "sepsis_patients": 320,
+      "caught": 0,
+      "very_early": 0,
+      "missed": 320
+    },
+    "ranges": {
+      "caught_share": [
+        0.0,
+        0.0
+      ],
+      "alerted_by_onset_share": [
+        0.0,
+        0.0
+      ],
+      "false_alarm_share": [
+        0.0,
+        0.0
+      ],
+      "utility": [
+        0.0,
+        0.0
+      ]
+    }
+  }
+}

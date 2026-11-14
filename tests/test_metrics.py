@@ -98,3 +98,16 @@ def test_sirs_needs_two_checks_and_ignores_missing_values():
     })
     assert sirs_count(features).tolist() == [1, 2, 0, 2]
     assert sirs_alert(features).tolist() == [False, True, False, True]
+
+
+def test_threshold_never_exceeds_the_budget_when_scores_are_tied():
+    """A time-only model gives many patients the same top score. Ties must not break the budget."""
+    rows, scores = [], []
+    for i in range(10):
+        rows.append(patient(f"n{i}", 3))
+        scores += [0.0, 0.0, 0.9 if i < 1 else 0.5]     # one clear top, nine tied
+    rows = pd.concat(rows, ignore_index=True)
+    scores = np.array(scores)
+    threshold = threshold_for_budget(rows, scores, budget=0.30)   # allows three, but nine are tied
+    result = patient_outcomes(rows, scores >= threshold)
+    assert summarize(result)["false_alarms"] == 1
