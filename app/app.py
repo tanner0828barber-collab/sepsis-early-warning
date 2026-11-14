@@ -44,7 +44,8 @@ CASES = json.loads((APP_DATA / "cases.json").read_text())
 PATIENTS = pd.read_csv(APP_DATA / "patients.csv")
 PATIENTS["hosp"] = "saved"
 SCOREBOARD = json.loads((APP_DATA / "scoreboard.json").read_text())
-LIMITS_TEXT = (Path(__file__).resolve().parent / "limits.md").read_text()
+# the "Known weak spots" section is written from the result files by scripts/build_scoreboard.py
+LIMITS_TEXT = (Path(__file__).resolve().parent / "limits.md").read_text().replace("RESULTS_PLACEHOLDER", SCOREBOARD["limits"])
 
 # ---------------------------------------------------------------- look and feel
 PAGE, TEXT, SECONDARY, ACCENT = "#FAFAF7", "#111418", "#5B6470", "#2450D8"
@@ -183,7 +184,7 @@ def make_chart(pid, hour):
     rows = rows[rows.ICULOS <= hour]
     facts = truth(pid)
 
-    titles = ["Relative risk score (1 = the alert line)"] + [
+    titles = ["Model score divided by the frozen alert cutoff (1 = the alert line). Not a probability."] + [
         f"{name} ({unit})" for _, name, unit, _ in VITAL_STRIPS
     ]
     fig = make_subplots(
@@ -195,7 +196,7 @@ def make_chart(pid, hour):
     relative = np.clip(seen["score"] / THRESHOLD, 0.03, 30)
     fig.add_trace(go.Scatter(
         x=seen.ICULOS, y=relative, mode="lines+markers", line=dict(color=ACCENT, width=2),
-        marker=dict(size=5), name="Relative risk score",
+        marker=dict(size=5), name="Model score divided by the frozen alert cutoff",
         hovertemplate="Hour %{x}: %{y:.2f} times the alert line<extra></extra>",
     ), row=1, col=1)
     fig.add_hline(y=1, line=dict(color=ALERT_LABEL, width=1.5, dash="dash"), row=1, col=1)
@@ -212,16 +213,16 @@ def make_chart(pid, hour):
     alerting = seen[seen["score"] >= THRESHOLD]
     marks = []
     if not alerting.empty:
-        marks.append((int(alerting.ICULOS.iloc[0]), "First alert", ALERT_LABEL, 1.0))
+        marks.append((int(alerting.ICULOS.iloc[0]), "First alert", ALERT_LABEL, 0.94))
     if facts["sepsis"]:
         if facts["label_start"] <= hour:
-            marks.append((facts["label_start"], "Label start", SECONDARY, 0.86))
+            marks.append((facts["label_start"], "Label start", SECONDARY, 0.81))
         if facts["onset"] <= hour:
-            marks.append((facts["onset"], "Onset", TEXT, 0.72))
+            marks.append((facts["onset"], "Onset", TEXT, 0.68))
     for x, word, color, height in marks:
         fig.add_vline(x=x, line=dict(color=color, width=1.5, dash="dot"))
         fig.add_annotation(
-            x=x, y=height, xref="x", yref="paper", text=word, showarrow=False,
+            x=x, y=height, xref="x", yref="y domain", text=word, showarrow=False,   # inside the top strip
             xanchor="left", xshift=4, font=dict(size=13, color=color),
             bgcolor="rgba(250,250,247,0.9)",
         )
@@ -247,6 +248,10 @@ def make_chart(pid, hour):
     fig.update_annotations(font_family="Inter, system-ui, sans-serif")
     for annotation in fig.layout.annotations[:5]:   # the strip titles: left aligned, small
         annotation.update(x=0, xanchor="left", font=dict(size=14, color=SECONDARY))
+    # the top strip's title sits above the plot area, where the page clips it. Lower the strip to make room.
+    bottom, top = fig.layout.yaxis.domain
+    fig.update_layout(yaxis=dict(domain=[bottom, top - 0.04]))
+    fig.layout.annotations[0].update(y=top - 0.04)
     fig.update_layout(
         height=720, showlegend=False, paper_bgcolor=PAGE, plot_bgcolor="#FFFFFF",
         margin=dict(l=48, r=16, t=40, b=48),
@@ -263,7 +268,14 @@ def status_card(pid, hour):
     alerting = seen[seen["score"] >= THRESHOLD]
     now_on = bool(seen["score"].iloc[-1] >= THRESHOLD)
 
-    if alerting.empty:
+    missed = facts["sepsis"] and hour >= facts["onset"] and alerting[alerting.ICULOS <= facts["onset"]].empty
+    if missed:
+        # a miss gets its own state: amber, a diamond and the word, never the green "no alert" card
+        kind, word = "watch", "◆ MISSED: no alert by onset"
+        more = [f"Hour {hour}."]
+        if not alerting.empty:
+            more.append(f"The first alert came at hour {int(alerting.ICULOS.iloc[0])}, after onset.")
+    elif alerting.empty:
         kind, word = "clear", "✓ No alert"
         more = [f"Hour {hour}. The score has stayed under the alert line."]
     else:
@@ -277,7 +289,7 @@ def status_card(pid, hour):
     if facts["sepsis"] and hour >= facts["onset"]:
         by_onset = alerting[alerting.ICULOS <= facts["onset"]]
         if by_onset.empty:
-            more.append(f"Sepsis onset was at hour {facts['onset']}. No alert before onset. This is a miss.")
+            more.append(f"Sepsis onset was at hour {facts['onset']}. The score never crossed the alert line in time. This is a miss.")
         else:
             warned = facts["onset"] - int(by_onset.ICULOS.iloc[0])
             more.append(f"Sepsis onset was at hour {facts['onset']}. The alert came {plural(warned, 'hour')} before.")
@@ -356,12 +368,12 @@ def warning_chart():
         marker_color=ACCENT, hovertemplate="%{x}: %{y} patients<extra></extra>",
     ))
     fig.update_layout(
-        title=dict(text=data["title"], font=dict(size=18)), height=380, paper_bgcolor=PAGE,
-        plot_bgcolor="#FFFFFF", margin=dict(l=48, r=16, t=64, b=64),
+        title=dict(text=data["title"], font=dict(size=18)), height=400, paper_bgcolor=PAGE,
+        plot_bgcolor="#FFFFFF", margin=dict(l=48, r=16, t=88, b=64),
         font=dict(family="Inter, system-ui, sans-serif", size=14, color=TEXT),
         xaxis_title="Hours of warning before onset", yaxis_title="Patients",
     )
-    fig.update_yaxes(gridcolor="#ECEEF1")
+    fig.update_yaxes(gridcolor="#ECEEF1", range=[0, max(data["counts"]) * 1.15])   # headroom for the number on the tallest bar
     return fig
 
 

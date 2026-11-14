@@ -14,14 +14,19 @@ Can a sepsis early warning model trained at one hospital travel to another? We t
 
 The full model, with its alert line set on hospital A so that 15% of patients who never develop sepsis get an alert:
 
-| | Hospital A dev (4,068 patients) | Hospital B (20,000 patients) |
+| | Hospital A dev (4,068 patients, the calibration set) | Hospital B (20,000 patients) |
 |---|---|---|
-| Official challenge utility score | 0.368 | 0.238 (95% range 0.214 to 0.262) |
-| Sepsis patients alerted at or before onset | 222 of 358 (62%) | 486 of 1,142 (43%) |
-| of those, inside the 12 hours before onset | 60 | 109 |
-| Sepsis patients missed | 136 | 656 |
+| Timely catches: first alert in the 12 hours before onset | 60 of 358 (17%) | **109 of 1,142 (9.5%)** |
+| Alerted very early: more than 12 hours before onset | 162 of 358 | 377 of 1,142 |
+| Sepsis patients missed | 136 of 358 | 656 of 1,142 (57%) |
 | False alarms | 556 of 3,710 (15.0%) | 1,358 of 18,858 (7.2%) |
+| False alarms per timely catch | 9.3 | 12.5 |
+| Alerts per 1,000 patient-days | 232 | 115 |
+| Official challenge utility score | 0.368 | 0.238 (95% range 0.214 to 0.262) |
 
+The alert line was set on hospital A dev, so its 15.0% false alarm share is true by construction. "Alerted at or before onset" (222 of 358 at A dev, 486 of 1,142 at B) adds the timely and very early rows together.
+
+- **Timely catches were rare.** At hospital B, 109 of 1,142 sepsis patients got their first alert in the 12 hours before onset.
 - **It travels only partly.** Utility fell by about a third.
 - **It got quieter, not noisier.** Hospital B measures lab values less often and its blood pressures read higher, so the model scored everyone lower there.
 - **Time in the unit explains a lot.** A model that sees only hours in the unit scored 0.242 at hospital B, about the same as the full model.
@@ -33,6 +38,7 @@ Hospital B is a site-held-out evaluation set, not a blinded test. The full discl
 ## Where to look
 
 - **[sepsis_early_warning.ipynb](sepsis_early_warning.ipynb)**: the whole project top to bottom, with outputs saved. It retrains the models and reproduces the frozen numbers.
+- **[WRITEUP.md](WRITEUP.md)**: the one page write-up ([PDF](WRITEUP.pdf)).
 - [DECISIONS.md](DECISIONS.md): every choice with its time and reason, the prediction committed before any model was trained, and how it compared with the result.
 - [DEFINITIONS.md](DEFINITIONS.md): what "caught," "very early," "missed," "false alarm," and "onset" mean here.
 - [SPEC.md](SPEC.md): the one page plan written before any code.

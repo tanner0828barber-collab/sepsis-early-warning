@@ -4,7 +4,7 @@
 
 ## What it is
 
-A retrospective risk-prioritization demo. Every hour it gives each intensive care patient a relative risk score for sepsis and raises an alert the first time the score crosses a frozen line. It never says a patient has or does not have sepsis.
+A retrospective risk-prioritization demo. Every hour it gives each intensive care patient a model score for sepsis and raises an alert the first time the score crosses a frozen line. The score is not a probability. It never says a patient has or does not have sepsis.
 
 - **Built:** November 14 to 15, 2026, in a 48 hour hackathon, by one high school student with AI coding help.
 - **Intended user:** an intensive care nurse deciding which patient to look at first.
@@ -31,7 +31,7 @@ Because the label is built partly from when staff ordered antibiotics and cultur
 
 ## Where the alert line came from
 
-It was set once, on 4,068 hospital A patients the model did not train on, so that at most 15% of patients who never developed sepsis were ever alerted. Then it was frozen and committed before hospital B was opened. It was not moved afterward.
+It was set once, on 4,068 hospital A patients the model did not train on, so that at most 15% of patients who never developed sepsis were ever alerted. Then it was frozen and committed before hospital B was opened. It was not moved afterward. Because the line was set on those patients, hospital A dev is the calibration set: its numbers describe the operating point and are not an independent test.
 
 ## Hospital B is not a blind test
 
@@ -58,4 +58,4 @@ RESULTS_PLACEHOLDER
 - Data and challenge: Reyna MA, Josef CS, Jeter R, et al. "Early Prediction of Sepsis from Clinical Data: the PhysioNet/Computing in Cardiology Challenge 2019." Critical Care Medicine, 2020.
 - Scoring: the challenge organizers' own scoring script, unchanged (BSD 2-Clause license).
 - Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio.
-- AI tools: Claude Code wrote most of the code and ran literature checks. Tanner chose the question, the user, the alert budget and the definitions, and decided what to keep.
+- AI tools: Claude Code wrote most of the code and ran literature checks. ChatGPT (Codex) gave an outside review after the freeze. Tanner chose the question, the user, the alert budget and the definitions, and decided what to keep.

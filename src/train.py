@@ -60,7 +60,7 @@ def fit_model(rows, columns, settings, trees, target=None):
 
 
 def score_rows(model, rows, columns, smooth=1):
-    """The relative risk score for every hourly row.
+    """The model score for every hourly row (a ranking score, not a probability).
 
     With smooth above 1, the score is the average of the patient's last few
     hourly outputs, so one noisy hour cannot fire an alert by itself.

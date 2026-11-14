@@ -1,10 +1,10 @@
 {
   "headline": "Trained at hospital A, frozen, then tested once at hospital B.",
-  "finding": "The official utility score fell from 0.368 at hospital A dev to 0.238 at hospital B. At hospital B the model alerted by onset on 486 of 1142 sepsis patients (43%, against 62% at A dev) and missed 656. It raised a false alarm on 1358 of 18858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A).",
+  "finding": "At hospital B, 109 of 1,142 sepsis patients (9.5%) got their first alert in the 12 hours before onset. Another 377 were alerted earlier than that, and 656 were missed. It raised a false alarm on 1,358 of 18,858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A). The official utility score fell from 0.368 at hospital A dev (the calibration set) to 0.238 at hospital B. A model that sees only hours in the unit scored 0.242 there.",
   "two_hospitals": {
     "columns": [
       "Full model (M3)",
-      "Hospital A dev",
+      "Hospital A dev (calibration set)",
       "Hospital B"
     ],
     "rows": [
@@ -14,24 +14,29 @@
         "0.238<br><span class=\"range\">0.214 to 0.262</span>"
       ],
       [
-        "Sepsis patients caught (first alert in the 12 hours before onset)",
-        "60 of 358<br><span class=\"range\">17%</span>",
-        "109 of 1142<br><span class=\"range\">10%</span>"
+        "Timely catches (first alert in the 12 hours before onset)",
+        "60 of 358<br><span class=\"range\">16.8%</span>",
+        "109 of 1,142<br><span class=\"range\">9.5%</span>"
       ],
       [
         "Alerted very early (more than 12 hours before onset)",
-        "162 of 358",
-        "377 of 1142"
+        "162 of 358<br><span class=\"range\">45.3%</span>",
+        "377 of 1,142<br><span class=\"range\">33.0%</span>"
       ],
       [
         "Sepsis patients missed (no alert by onset)",
-        "136 of 358",
-        "656 of 1142"
+        "136 of 358<br><span class=\"range\">38.0%</span>",
+        "656 of 1,142<br><span class=\"range\">57.4%</span>"
       ],
       [
         "False alarms (patients who never developed sepsis, alerted at least once)",
-        "556 of 3710<br>15% <span class=\"range\">14% to 16%</span>",
-        "1358 of 18858<br>7% <span class=\"range\">7% to 8%</span>"
+        "556 of 3,710<br>15.0% <span class=\"range\">13.9% to 16.1%</span>",
+        "1,358 of 18,858<br>7.2% <span class=\"range\">6.9% to 7.6%</span>"
+      ],
+      [
+        "False alarms per timely catch",
+        "9.3",
+        "12.5"
       ],
       [
         "Alerts per 1,000 patient-days",
@@ -39,18 +44,19 @@
         "115"
       ],
       [
-        "Median hours of warning (patients alerted by onset)",
+        "Median hours of warning (all patients alerted by onset, most of them very early)",
         "31 hours",
         "41 hours"
       ]
     ],
-    "caption": "The threshold was set once on hospital A dev at a 15% alert budget and never changed. Gray ranges are 95% ranges from a bootstrap that resamples patients 1,000 times. Hospital A dev is 4,068 patients the model did not train on. Hospital B is 20,000 patients from a different hospital, scored once."
+    "caption": "The threshold was set once on hospital A dev at a 15% alert budget and never changed. That makes hospital A dev the calibration set: its 15% false alarm share is true by construction, not a measured result. Gray ranges are 95% ranges from a bootstrap that resamples patients 1,000 times. Hospital A dev is 4,068 patients the model did not train on. Hospital B is 20,000 patients from a different hospital, scored once."
   },
   "models": {
     "columns": [
       "Method",
-      "Utility at A dev",
+      "Utility at A dev (calibration set)",
       "Utility at B",
+      "Timely at B",
       "Alerted by onset at B",
       "Missed at B",
       "False alarms at B"
@@ -60,58 +66,65 @@
         "Never alert",
         "0.000",
         "0.000",
-        "0 of 1142 (0%)",
-        "1142",
-        "0 of 18858 (0.0%)"
+        "0",
+        "0 of 1,142 (0.0%)",
+        "1,142",
+        "0 of 18,858 (0.0%)"
       ],
       [
         "Modified SIRS rule (two or more of four checks)",
         "0.090",
         "-0.014",
-        "966 of 1142 (85%)",
+        "306",
+        "966 of 1,142 (84.6%)",
         "176",
-        "12630 of 18858 (67.0%)"
+        "12,630 of 18,858 (67.0%)"
       ],
       [
         "T0: hours in the unit only",
         "0.312",
         "0.242",
-        "425 of 1142 (37%)",
+        "79",
+        "425 of 1,142 (37.2%)",
         "717",
-        "2581 of 18858 (13.7%)"
+        "2,581 of 18,858 (13.7%)"
       ],
       [
         "M1: body signals and trends",
         "0.197",
         "0.091",
-        "317 of 1142 (28%)",
+        "103",
+        "317 of 1,142 (27.8%)",
         "825",
-        "994 of 18858 (5.3%)"
+        "994 of 18,858 (5.3%)"
       ],
       [
         "M2: M1 plus time",
         "0.367",
         "0.247",
-        "502 of 1142 (44%)",
+        "111",
+        "502 of 1,142 (44.0%)",
         "640",
-        "1452 of 18858 (7.7%)"
+        "1,452 of 18,858 (7.7%)"
       ],
       [
         "M3: M2 plus measurement signals (the full model)",
         "0.368",
         "0.238",
-        "486 of 1142 (43%)",
+        "109",
+        "486 of 1,142 (42.6%)",
         "656",
-        "1358 of 18858 (7.2%)"
+        "1,358 of 18,858 (7.2%)"
       ]
     ],
-    "caption": "Each model's threshold was set on hospital A dev at the same 15% budget, then applied unchanged to hospital B. The gap between M2 and M3 shows how much the model leans on what was measured and when. That is a care pattern, not a cause."
+    "caption": "Each model's threshold was set on hospital A dev at the same 15% budget, then applied unchanged to hospital B. \"Timely\" means the first alert came in the 12 hours before onset. The gap between M2 and M3 shows how much the model leans on what was measured and when. That is a care pattern, not a cause."
   },
   "travel_attempts": {
     "columns": [
       "Attempt",
-      "Utility at A dev",
+      "Utility at A dev (calibration set)",
       "Utility at B",
+      "Timely at B",
       "Alerted by onset at B",
       "Missed at B",
       "False alarms at B"
@@ -121,44 +134,47 @@
         "Main result: frozen score cutoff from hospital A",
         "0.368",
         "0.238",
-        "486 of 1142 (43%)",
+        "109",
+        "486 of 1,142 (42.6%)",
         "656",
-        "1358 of 18858 (7.2%)"
+        "1,358 of 18,858 (7.2%)"
       ],
       [
         "Label-free adjustment: alert on the same share of all patients as at A dev",
         "0.368",
         "0.270",
-        "629 of 1142 (55%)",
+        "171",
+        "629 of 1,142 (55.1%)",
         "513",
-        "3229 of 18858 (17.1%)"
+        "3,229 of 18,858 (17.1%)"
       ],
       [
         "Label-free adjustment: values rescaled by each hospital's own average and spread",
         "0.368",
         "0.246",
-        "513 of 1142 (45%)",
+        "118",
+        "513 of 1,142 (44.9%)",
         "629",
-        "1656 of 18858 (8.8%)"
+        "1,656 of 18,858 (8.8%)"
       ]
     ],
     "caption": "The two adjustments use hospital B's measurements and scores but never its sepsis labels. They were planned before the hospital B run and are reported whether or not they helped."
   },
   "proof": [
     {
-      "big": "486 of 1142",
-      "what": "sepsis patients alerted at or before onset",
-      "where": "Hospital B, 20,000 patients it never trained on"
+      "big": "109 of 1,142",
+      "what": "sepsis patients got their first alert in the 12 hours before onset",
+      "where": "Hospital B, 20,000 patients it never trained on. 656 were missed"
     },
     {
-      "big": "41 hours",
-      "what": "median warning before onset",
-      "where": "Hospital B, among the 486 patients alerted by onset"
+      "big": "486 of 1,142",
+      "what": "sepsis patients alerted at or before onset, however early",
+      "where": "109 in the 12 hour window plus 377 more than 12 hours early"
     },
     {
       "big": "7.2%",
       "what": "of patients who never developed sepsis got an alert",
-      "where": "Hospital B: 1,358 of 18,858 patients"
+      "where": "Hospital B: 1,358 of 18,858 patients. 12.5 false alarms per timely catch. 115 alerts per 1,000 patient-days"
     }
   ],
   "warning_chart": {
@@ -180,8 +196,9 @@
       95,
       216
     ],
-    "title": "Half of the alerted sepsis patients got 41 hours of warning or more",
+    "title": "Most alerts came more than 12 hours early:<br>377 of the 486 patients alerted by onset",
     "source": "Source: Hospital B, 486 sepsis patients with an alert at or before onset. Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
   },
-  "prediction_box": "<b>Before running this, the prediction was:</b> the utility score goes down at hospital B, false alarms go above the 15% budget (low confidence), and the full model M3 loses more than the body-signals model M1 when it travels. Committed on Sat 11/14/2026 at 2:20 PM Phoenix time, before any model was trained (first commit in the repository).<br><br><b>What happened:</b> The official utility score fell from 0.368 at hospital A dev to 0.238 at hospital B. At hospital B the model alerted by onset on 486 of 1142 sepsis patients (43%, against 62% at A dev) and missed 656. It raised a false alarm on 1358 of 18858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A)."
+  "limits": "Hospital B, 20,000 patients. These are retrospective results on recorded data, not performance in clinical use.\n\n- **Timely catches are rare.** Of 1,142 sepsis patients, 109 (9.5%) got their first alert in the 12 hours before onset. 377 (33.0%) were alerted earlier than that. 656 (57.4%) were missed.\n- **False alarms.** 1,358 of 18,858 patients who never developed sepsis were alerted at least once (7.2%). That is 12.5 false alarms per timely catch. This counts patients, not alerts.\n- **Workload.** 115 alerts per 1,000 patient-days, and 0.9 repeat alerts per alerted patient.\n- **It did not beat the clock.** A model that sees only hours in the unit scored utility 0.242. The full model scored 0.238.\n- **First-day sepsis.** When the sepsis label starts before hour 24, 57 of 514 patients were alerted by onset (11.1%), against 429 of 628 (68.3%) when it starts later.\n- **Late-entry cases** (label already on in the first recorded hour): the model caught 14 of 223. The modified SIRS rule caught 150 of 223.\n- **Hospital A dev numbers are calibration numbers.** The alert line was set on those 4,068 patients, so their 15.0% false alarm share is true by construction, not a measured result.\n- **The score is not a probability.** It is the model's output divided by the frozen alert cutoff. Calibration was not checked.\n\n### By age and sex, Hospital B\n\n| Group | Sepsis patients | Timely | Alerted by onset | Missed | False alarms |\n|---|---|---|---|---|---|\n| Women | 495 | 44 (8.9%) | 210 (42.4%) | 285 (57.6%) | 545 of 8,773 (6.2%) |\n| Men | 647 | 65 (10.0%) | 276 (42.7%) | 371 (57.3%) | 813 of 10,085 (8.1%) |\n| Under 50 | 276 | 26 (9.4%) | 116 (42.0%) | 160 (58.0%) | 364 of 4,542 (8.0%) |\n| 50 to 64 | 351 | 30 (8.5%) | 141 (40.2%) | 210 (59.8%) | 418 of 5,927 (7.1%) |\n| 65 to 79 | 386 | 38 (9.8%) | 183 (47.4%) | 203 (52.6%) | 462 of 6,196 (7.5%) |\n| 80 and over | 129 | 15 (11.6%) | 46 (35.7%) | 83 (64.3%) | 114 of 2,193 (5.2%) |\n\nThe group with the lowest share alerted by onset is **80 and over**. This is a first check, not a fairness audit. The data has no race, ethnicity, language or insurance fields, so those groups cannot be checked at all.",
+  "prediction_box": "<b>Before running this, the prediction was:</b> the utility score goes down at hospital B, false alarms go above the 15% budget (low confidence), and the full model M3 loses more than the body-signals model M1 when it travels. Committed on Sat 11/14/2026 at 2:20 PM Phoenix time, before any model was trained (first commit in the repository).<br><br><b>What happened:</b> At hospital B, 109 of 1,142 sepsis patients (9.5%) got their first alert in the 12 hours before onset. Another 377 were alerted earlier than that, and 656 were missed. It raised a false alarm on 1,358 of 18,858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A). The official utility score fell from 0.368 at hospital A dev (the calibration set) to 0.238 at hospital B. A model that sees only hours in the unit scored 0.242 there."
 }

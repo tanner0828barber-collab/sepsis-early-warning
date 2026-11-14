@@ -11,8 +11,8 @@ Fixed Sat 11/14/2026, before any code. Every number in this project uses these m
 
 ## Alerts
 
-- **Relative risk score:** the model's output for one patient at one hour. It is a ranking score, not a probability, unless calibration is checked.
-- **Threshold:** one score cutoff, chosen once on hospital A dev patients to meet the alert budget, then frozen and applied unchanged to hospital B.
+- **Model score:** the model's output for one patient at one hour. It is a ranking score, not a probability. Calibration was not checked. The app shows it divided by the frozen alert cutoff, so 1 is the alert line. (Until Sat 11/14 4:40 PM this was called "relative risk score." It was renamed after the outside review because "risk" sounds like a probability. The meaning did not change.)
+- **Threshold:** one score cutoff, chosen once on hospital A dev patients to meet the alert budget, then frozen and applied unchanged to hospital B. That makes hospital A dev the calibration set: its false alarm share is 15% by construction.
 - **Alert budget:** at most 15% of hospital A dev patients who never develop sepsis are ever alerted.
 - **Alert:** the first hour a patient's score crosses the frozen threshold.
 - **Repeat alerts:** later separate crossings for the same patient.

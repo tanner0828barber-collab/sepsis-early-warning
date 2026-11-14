@@ -24,8 +24,14 @@ frozen = json.loads(frozen_file.read_text()) if frozen_file.exists() else json.l
 budget = round(frozen["budget"] * 100)
 
 
-def pct(x, digits=0):
+def pct(x, digits=1):
+    """One percent style everywhere on screen: one decimal."""
     return f"{100 * x:.{digits}f}%"
+
+
+def n(x):
+    """A count with commas."""
+    return f"{int(x):,}"
 
 
 def with_range(numbers, key, kind="pct"):
@@ -41,12 +47,14 @@ def with_range(numbers, key, kind="pct"):
 
 def site_column(numbers):
     """The rows of the two-hospital scoreboard for one site."""
+    sepsis = numbers["sepsis_patients"]
     return [
         with_range(numbers, "utility", "num"),
-        f'{numbers["caught"]} of {numbers["sepsis_patients"]}<br><span class="range">{pct(numbers["caught_share"])}</span>',
-        f'{numbers["very_early"]} of {numbers["sepsis_patients"]}',
-        f'{numbers["missed"]} of {numbers["sepsis_patients"]}',
-        f'{numbers["false_alarms"]} of {numbers["non_sepsis_patients"]}<br>' + with_range(numbers, "false_alarm_share").replace("<br>", " "),
+        f'{n(numbers["caught"])} of {n(sepsis)}<br><span class="range">{pct(numbers["caught_share"])}</span>',
+        f'{n(numbers["very_early"])} of {n(sepsis)}<br><span class="range">{pct(numbers["very_early"] / sepsis)}</span>',
+        f'{n(numbers["missed"])} of {n(sepsis)}<br><span class="range">{pct(numbers["missed"] / sepsis)}</span>',
+        f'{n(numbers["false_alarms"])} of {n(numbers["non_sepsis_patients"])}<br>' + with_range(numbers, "false_alarm_share").replace("<br>", " "),
+        f'{numbers["false_alarms"] / numbers["caught"]:.1f}',
         f'{numbers["alerts_per_1000_patient_days"]:.0f}',
         f'{numbers["median_hours_of_warning"]:g} hours',
     ]
@@ -54,12 +62,13 @@ def site_column(numbers):
 
 ROW_NAMES = [
     "Official utility score (0 is never alerting, 1 is perfect)",
-    "Sepsis patients caught (first alert in the 12 hours before onset)",
+    "Timely catches (first alert in the 12 hours before onset)",
     "Alerted very early (more than 12 hours before onset)",
     "Sepsis patients missed (no alert by onset)",
     "False alarms (patients who never developed sepsis, alerted at least once)",
+    "False alarms per timely catch",
     "Alerts per 1,000 patient-days",
-    "Median hours of warning (patients alerted by onset)",
+    "Median hours of warning (all patients alerted by onset, most of them very early)",
 ]
 
 main_a = a["M3"]
@@ -74,22 +83,24 @@ if b is None:
 else:
     site, main = "Hospital B", b["M3"]
     two = {
-        "columns": ["Full model (M3)", "Hospital A dev", "Hospital B"],
+        "columns": ["Full model (M3)", "Hospital A dev (calibration set)", "Hospital B"],
         "rows": [[n, x, y] for n, x, y in zip(ROW_NAMES, site_column(main_a), site_column(main))],
     }
     direction = "fell" if main["utility"] < main_a["utility"] else "rose"
     out["headline"] = "Trained at hospital A, frozen, then tested once at hospital B."
     out["finding"] = (
-        f'The official utility score {direction} from {main_a["utility"]:.3f} at hospital A dev to {main["utility"]:.3f} at hospital B. '
-        f'At hospital B the model alerted by onset on {main["caught"] + main["very_early"]} of {main["sepsis_patients"]} sepsis patients '
-        f'({pct(main["alerted_by_onset_share"])}, against {pct(main_a["alerted_by_onset_share"])} at A dev) and missed {main["missed"]}. '
-        f'It raised a false alarm on {main["false_alarms"]} of {main["non_sepsis_patients"]} patients who never developed sepsis '
-        f'({pct(main["false_alarm_share"], 1)}, against the {budget}% budget set at hospital A).'
+        f'At hospital B, {n(main["caught"])} of {n(main["sepsis_patients"])} sepsis patients ({pct(main["caught_share"])}) got their first alert '
+        f'in the 12 hours before onset. Another {n(main["very_early"])} were alerted earlier than that, and {n(main["missed"])} were missed. '
+        f'It raised a false alarm on {n(main["false_alarms"])} of {n(main["non_sepsis_patients"])} patients who never developed sepsis '
+        f'({pct(main["false_alarm_share"])}, against the {budget}% budget set at hospital A). '
+        f'The official utility score {direction} from {main_a["utility"]:.3f} at hospital A dev (the calibration set) to {main["utility"]:.3f} at hospital B. '
+        f'A model that sees only hours in the unit scored {b["T0"]["utility"]:.3f} there.'
     )
     models_source, models_site = b, "hospital B"
 
 two["caption"] = (
     f"The threshold was set once on hospital A dev at a {budget}% alert budget and never changed. "
+    f"That makes hospital A dev the calibration set: its {budget}% false alarm share is true by construction, not a measured result. "
     "Gray ranges are 95% ranges from a bootstrap that resamples patients 1,000 times. "
     f'Hospital A dev is {main_a["patients"]:,} patients the model did not train on. '
     + (f'Hospital B is {b["M3"]["patients"]:,} patients from a different hospital, scored once.' if b else "")
@@ -107,13 +118,14 @@ names = [
 ]
 
 
-def model_row(label, n, home=None):
+def model_row(label, m, home=None):
     row = [
         label,
-        f'{n["utility"]:.3f}',
-        f'{n["caught"] + n["very_early"]} of {n["sepsis_patients"]} ({pct(n["alerted_by_onset_share"])})',
-        f'{n["missed"]}',
-        f'{n["false_alarms"]} of {n["non_sepsis_patients"]} ({pct(n["false_alarm_share"], 1)})',
+        f'{m["utility"]:.3f}',
+        f'{n(m["caught"])}',
+        f'{n(m["caught"] + m["very_early"])} of {n(m["sepsis_patients"])} ({pct(m["alerted_by_onset_share"])})',
+        f'{n(m["missed"])}',
+        f'{n(m["false_alarms"])} of {n(m["non_sepsis_patients"])} ({pct(m["false_alarm_share"])})',
     ]
     if home is not None:
         row.insert(1, f'{home["utility"]:.3f}')
@@ -122,16 +134,17 @@ def model_row(label, n, home=None):
 
 if b is None:
     out["models"] = {
-        "columns": ["Method", "Utility", "Alerted by onset", "Missed", "False alarms"],
+        "columns": ["Method", "Utility", "Timely", "Alerted by onset", "Missed", "False alarms"],
         "rows": [model_row(label, a[key]) for key, label in names],
         "caption": f"All on hospital A dev. Each model has its own threshold, set at the same {budget}% budget.",
     }
 else:
     out["models"] = {
-        "columns": ["Method", "Utility at A dev", "Utility at B", "Alerted by onset at B", "Missed at B", "False alarms at B"],
+        "columns": ["Method", "Utility at A dev (calibration set)", "Utility at B", "Timely at B", "Alerted by onset at B", "Missed at B", "False alarms at B"],
         "rows": [model_row(label, b[key], a[key]) for key, label in names],
         "caption": (
             f"Each model's threshold was set on hospital A dev at the same {budget}% budget, then applied unchanged to hospital B. "
+            '"Timely" means the first alert came in the 12 hours before onset. '
             "The gap between M2 and M3 shows how much the model leans on what was measured and when. That is a care pattern, not a cause."
         ),
     }
@@ -141,7 +154,7 @@ else:
         ("M3 rescaled", "Label-free adjustment: values rescaled by each hospital's own average and spread"),
     ]
     out["travel_attempts"] = {
-        "columns": ["Attempt", "Utility at A dev", "Utility at B", "Alerted by onset at B", "Missed at B", "False alarms at B"],
+        "columns": ["Attempt", "Utility at A dev (calibration set)", "Utility at B", "Timely at B", "Alerted by onset at B", "Missed at B", "False alarms at B"],
         "rows": [model_row(label, b[key], a[key]) for key, label in attempts],
         "caption": (
             "The two adjustments use hospital B's measurements and scores but never its sepsis labels. "
@@ -152,15 +165,17 @@ else:
 # the proof strip: three numbers, each with its denominator and its site
 in_time = main["caught"] + main["very_early"]
 out["proof"] = [
-    {"big": f'{in_time} of {main["sepsis_patients"]}',
-     "what": "sepsis patients alerted at or before onset",
-     "where": f'{site}, {main["patients"]:,} patients it never trained on'},
-    {"big": f'{main["median_hours_of_warning"]:g} hours',
-     "what": "median warning before onset",
-     "where": f"{site}, among the {in_time} patients alerted by onset"},
-    {"big": pct(main["false_alarm_share"], 1),
+    {"big": f'{n(main["caught"])} of {n(main["sepsis_patients"])}',
+     "what": "sepsis patients got their first alert in the 12 hours before onset",
+     "where": f'{site}, {main["patients"]:,} patients it never trained on. {n(main["missed"])} were missed'},
+    {"big": f'{n(in_time)} of {n(main["sepsis_patients"])}',
+     "what": "sepsis patients alerted at or before onset, however early",
+     "where": f'{n(main["caught"])} in the 12 hour window plus {n(main["very_early"])} more than 12 hours early'},
+    {"big": pct(main["false_alarm_share"]),
      "what": "of patients who never developed sepsis got an alert",
-     "where": f'{site}: {main["false_alarms"]:,} of {main["non_sepsis_patients"]:,} patients'},
+     "where": (f'{site}: {n(main["false_alarms"])} of {n(main["non_sepsis_patients"])} patients. '
+               f'{main["false_alarms"] / main["caught"]:.1f} false alarms per timely catch. '
+               f'{main["alerts_per_1000_patient_days"]:.0f} alerts per 1,000 patient-days')},
 ]
 
 # hours of warning, for patients alerted by onset
@@ -172,12 +187,69 @@ labels = ["0 to 2", "3 to 5", "6 to 8", "9 to 12", "13 to 24", "25 to 48", "over
 out["warning_chart"] = {
     "labels": labels,
     "counts": [int(((warned >= lo) & (warned <= hi)).sum()) for lo, hi in bins],
-    "title": f"Half of the alerted sepsis patients got {warned.median():g} hours of warning or more",
+    "title": f"Most alerts came more than 12 hours early:<br>{n((warned > 12).sum())} of the {n(len(warned))} patients alerted by onset",
     "source": (
-        f"Source: {site}, {len(warned)} sepsis patients with an alert at or before onset. "
+        f"Source: {site}, {n(len(warned))} sepsis patients with an alert at or before onset. "
         "Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
     ),
 }
+
+# the "Known weak spots" section of the limits card, written from the result files
+sepsis = patients[patients.sepsis]
+first_day, later = sepsis[sepsis.label_start < 24], sepsis[sepsis.label_start >= 24]
+
+
+def by_onset(group):
+    return int(group.outcome.isin(["caught", "very early"]).sum())
+
+
+def group_row(name, mask):
+    g = patients[mask]
+    s, others = g[g.sepsis], g[~g.sepsis]
+    timely, missed = int((s.outcome == "caught").sum()), int((s.outcome == "missed").sum())
+    alarms = int((others.outcome == "false alarm").sum())
+    return (
+        f"| {name} | {n(len(s))} | {n(timely)} ({pct(timely / len(s))}) | {n(by_onset(s))} ({pct(by_onset(s) / len(s))}) "
+        f"| {n(missed)} ({pct(missed / len(s))}) | {n(alarms)} of {n(len(others))} ({pct(alarms / len(others))}) |"
+    ), by_onset(s) / len(s)
+
+
+groups = [
+    ("Women", patients.male == 0), ("Men", patients.male == 1),
+    ("Under 50", patients.age < 50), ("50 to 64", (patients.age >= 50) & (patients.age < 65)),
+    ("65 to 79", (patients.age >= 65) & (patients.age < 80)), ("80 and over", patients.age >= 80),
+]
+group_lines, shares = zip(*(group_row(name, mask) for name, mask in groups))
+worst = groups[shares.index(min(shares))][0]
+late, sirs_late = main["late_entry"], (b or a)["Modified SIRS"]["late_entry"]
+time_only = (b or a)["T0"]
+out["limits"] = "\n".join([
+    f"{site}, {n(main['patients'])} patients. These are retrospective results on recorded data, not performance in clinical use.",
+    "",
+    f"- **Timely catches are rare.** Of {n(main['sepsis_patients'])} sepsis patients, {n(main['caught'])} ({pct(main['caught_share'])}) got their first alert "
+    f"in the 12 hours before onset. {n(main['very_early'])} ({pct(main['very_early'] / main['sepsis_patients'])}) were alerted earlier than that. "
+    f"{n(main['missed'])} ({pct(main['missed'] / main['sepsis_patients'])}) were missed.",
+    f"- **False alarms.** {n(main['false_alarms'])} of {n(main['non_sepsis_patients'])} patients who never developed sepsis were alerted at least once "
+    f"({pct(main['false_alarm_share'])}). That is {main['false_alarms'] / main['caught']:.1f} false alarms per timely catch. This counts patients, not alerts.",
+    f"- **Workload.** {main['alerts_per_1000_patient_days']:.0f} alerts per 1,000 patient-days, and {main['repeat_alerts_per_alerted_patient']:.1f} repeat alerts per alerted patient.",
+    f"- **It did not beat the clock.** A model that sees only hours in the unit scored utility {time_only['utility']:.3f}. The full model scored {main['utility']:.3f}.",
+    f"- **First-day sepsis.** When the sepsis label starts before hour 24, {n(by_onset(first_day))} of {n(len(first_day))} patients were alerted by onset "
+    f"({pct(by_onset(first_day) / len(first_day))}), against {n(by_onset(later))} of {n(len(later))} ({pct(by_onset(later) / len(later))}) when it starts later.",
+    f"- **Late-entry cases** (label already on in the first recorded hour): the model caught {n(late['caught'])} of {n(late['sepsis_patients'])}. "
+    f"The modified SIRS rule caught {n(sirs_late['caught'])} of {n(sirs_late['sepsis_patients'])}.",
+    f"- **Hospital A dev numbers are calibration numbers.** The alert line was set on those {n(main_a['patients'])} patients, "
+    f"so their {pct(main_a['false_alarm_share'])} false alarm share is true by construction, not a measured result.",
+    "- **The score is not a probability.** It is the model's output divided by the frozen alert cutoff. Calibration was not checked.",
+    "",
+    f"### By age and sex, {site}",
+    "",
+    "| Group | Sepsis patients | Timely | Alerted by onset | Missed | False alarms |",
+    "|---|---|---|---|---|---|",
+    *group_lines,
+    "",
+    f"The group with the lowest share alerted by onset is **{worst.lower()}**. This is a first check, not a fairness audit. "
+    "The data has no race, ethnicity, language or insurance fields, so those groups cannot be checked at all.",
+])
 
 decisions = (ROOT / "DECISIONS.md").read_text()
 happened = "Hospital B has not been run yet." if b is None else out["finding"]

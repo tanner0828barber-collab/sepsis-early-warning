@@ -405,7 +405,8 @@ md("""
 - **Time in the unit explains a lot.** Compare T0 with M1 above. Part of what looks like skill is the shape of this dataset.
 - **Very early alerts are not the same as catches.** We report them separately.
 - **The label depends on staff behavior.** It is built partly from when antibiotics were ordered and cultures drawn.
-- **Scores are relative risk scores, not probabilities.** Calibration was not checked.
+- **Scores are model scores, not probabilities.** Calibration was not checked.
+- **Hospital A dev numbers are calibration numbers.** The alert line was set on those patients, so the 15.0% false alarm share at hospital A dev is true by construction, not a measured result.
 - **Retrospective only.** Nothing here was tested with a real nurse or on live data.
 
 Would this be safe to use? **No.** It would need a prospective test at the hospital that would use it, a check that staff act on its alerts, calibration, and a far wider fairness audit.
@@ -415,7 +416,7 @@ Would this be safe to use? **No.** It would need a prospective test at the hospi
 - Data and challenge: Reyna MA, Josef CS, Jeter R, et al. "Early Prediction of Sepsis from Clinical Data: the PhysioNet/Computing in Cardiology Challenge 2019." Critical Care Medicine, 2020. Data license CC BY 4.0.
 - Scoring: the challenge organizers' `evaluate_sepsis_score.py`, unchanged, BSD 2-Clause license, in `third_party/`.
 - Libraries: pandas, NumPy, scikit-learn, Matplotlib, Plotly, Gradio, Jupyter.
-- AI tools: Claude Code wrote most of the code from Tanner's instructions and ran the literature checks. Tanner chose the question, the user, the alert budget, and the definitions, adopted the prediction before any model was trained, decided to improve the model before freezing, and read the failures.
+- AI tools: Claude Code wrote most of the code from Tanner's instructions and ran the literature checks. ChatGPT (Codex) gave an outside review after the freeze. Tanner chose the question, the user, the alert budget, and the definitions, adopted the prediction before any model was trained, decided to improve the model before freezing, and read the failures.
 
 This project is a prototype and is not medical advice.
 """)
