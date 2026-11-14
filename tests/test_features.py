@@ -113,3 +113,21 @@ def test_piles_do_not_share_patients():
     assert piles.pid.is_unique
     assert set(piles.pid) == set(full.pid)
     assert set(piles.pile) == {"fit", "tune", "dev"}
+
+
+def test_rescaling_removes_a_site_wide_shift():
+    """If a second site reads every heart rate 10 higher, rescaled inputs should match."""
+    from rescale import rescale_features, site_norms
+
+    site_one = fake_patients(seed=5)
+    site_two = site_one.copy()
+    site_two["HR"] = site_two["HR"] + 10
+
+    one = rescale_features(build_features(site_one), site_norms(site_one))
+    two = rescale_features(build_features(site_two), site_norms(site_two))
+    for column in ["last_HR", "mean6_HR", "min6_HR", "max6_HR", "change6_HR"]:
+        np.testing.assert_allclose(one[column], two[column], rtol=1e-9, equal_nan=True)
+    # and it must not touch the measurement or time inputs
+    raw = build_features(site_one)
+    pd.testing.assert_series_equal(one["hours_since_HR"], raw["hours_since_HR"])
+    pd.testing.assert_series_equal(one["hours_in_unit"], raw["hours_in_unit"])

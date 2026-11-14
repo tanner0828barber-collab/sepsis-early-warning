@@ -27,11 +27,11 @@ from evaluate_sepsis_score import compute_prediction_utility  # noqa: E402
 DT_EARLY, DT_OPTIMAL, DT_LATE = -12, -6, 3
 
 
-def utility_score(rows, alert_on):
-    """Normalized utility for a group of patients.
+def utility_parts(rows, alert_on):
+    """Per-patient utility: what we scored, the best possible, and never alerting.
 
-    `rows` needs pid and SepsisLabel, whole records in time order.
-    `alert_on` is True for every hour the model (or rule) is alerting.
+    Returns three arrays with one entry per patient, in the order patients
+    appear in `rows`. Keeping them per patient lets us resample patients later.
     """
     labels_all = rows["SepsisLabel"].to_numpy().astype(int)
     alerts_all = np.asarray(alert_on).astype(int)
@@ -39,7 +39,7 @@ def utility_score(rows, alert_on):
     starts = np.flatnonzero(np.r_[True, pids[1:] != pids[:-1]])
     ends = np.r_[starts[1:], len(pids)]
 
-    observed = best = inaction = 0.0
+    observed, best, inaction = [], [], []
     for start, end in zip(starts, ends):
         labels = labels_all[start:end]
         alerts = alerts_all[start:end]
@@ -48,8 +48,21 @@ def utility_score(rows, alert_on):
         if labels.any():
             t_sepsis = int(np.argmax(labels)) - DT_OPTIMAL
             best_alerts[max(0, t_sepsis + DT_EARLY): min(t_sepsis + DT_LATE + 1, n)] = 1
-        observed += compute_prediction_utility(labels, alerts, check_errors=False)
-        best += compute_prediction_utility(labels, best_alerts, check_errors=False)
-        inaction += compute_prediction_utility(labels, np.zeros(n), check_errors=False)
+        observed.append(compute_prediction_utility(labels, alerts, check_errors=False))
+        best.append(compute_prediction_utility(labels, best_alerts, check_errors=False))
+        inaction.append(compute_prediction_utility(labels, np.zeros(n), check_errors=False))
+    return np.array(observed), np.array(best), np.array(inaction)
 
-    return float((observed - inaction) / (best - inaction))
+
+def normalize(observed, best, inaction):
+    """The organizers' scaling: never alerting is 0, perfect alerting is 1."""
+    return float((observed.sum() - inaction.sum()) / (best.sum() - inaction.sum()))
+
+
+def utility_score(rows, alert_on):
+    """Normalized utility for a group of patients.
+
+    `rows` needs pid and SepsisLabel, whole records in time order.
+    `alert_on` is True for every hour the model (or rule) is alerting.
+    """
+    return normalize(*utility_parts(rows, alert_on))

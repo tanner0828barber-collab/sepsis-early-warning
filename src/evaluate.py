@@ -8,7 +8,7 @@ import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from metrics import patient_outcomes, summarize
-from utility import utility_score
+from utility import normalize, utility_parts
 
 
 def evaluate_alerts(rows, alert_on, scores=None):
@@ -20,7 +20,10 @@ def evaluate_alerts(rows, alert_on, scores=None):
     alert_on = np.asarray(alert_on, dtype=bool)
     patients = patient_outcomes(rows, alert_on)
     numbers = summarize(patients)
-    numbers["utility"] = utility_score(rows, alert_on)
+    # the official utility score, kept per patient so ranges can resample patients
+    observed, best, inaction = utility_parts(rows, alert_on)
+    patients["u_observed"], patients["u_best"], patients["u_inaction"] = observed, best, inaction
+    numbers["utility"] = normalize(observed, best, inaction)
 
     if scores is not None:
         labels = rows["SepsisLabel"].to_numpy()
