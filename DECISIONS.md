@@ -249,6 +249,15 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Guess against result: wrong. Guessed utility flat to plus 0.01 and catches within 1.5 points. It lost on both. Guessed the keep rule would not be met (right).
   - What it means: for this model and these inputs, the plain yes or no label ranks patients better than the score-shaped number. That closes the list of ranking ideas with outside evidence behind them. Honest limit: the winner paired this target with other choices (a different library, signatures, a cutoff picked to maximize utility with no cap), so this does not show their whole method would fail here.
 
+## A second count of timely alerts (after-the-fact reporting, no model change)
+
+- Sat 11/14, 6:31 PM. PLAN, written before the script ran: count the sepsis patients whose alert was ON during the 12 hours before onset (script scripts/after_the_fact_alert_on_in_window.py). Why: "timely" in this project counts only a patient's FIRST alert. A patient whose first alert came 30 hours early and whose alert was still on at onset is counted as "very early," not timely. The official utility score rewards every alerting hour inside that window, whenever the first alert was, so the two views can disagree and a reader should see both.
+  - Definition, fixed here: a sepsis patient counts as "alert on in the window" if the score is at or above the frozen alert line in at least one recorded hour from 12 hours before onset through the onset hour. Same window edges as "timely."
+  - Nothing is retrained and nothing is chosen. The script reads the frozen models and frozen thresholds and counts the same alerts a different way. The frozen files are not written. Version 1's numbers do not change, and 109 of 1,142 stays the timely number.
+  - Reported for every planned model and the modified SIRS rule, at hospital A dev and hospital B, so the full model's count can be read next to the time-only model's. The script first checks that it reproduces the frozen timely, very early and missed counts, and stops if it does not.
+  - Honest note: this is not a blind plan. The measure was defined after hospital B was scored, and the full model's hospital B count (452 of 1,142) was already seen at about 6:10 PM, in a read-only check by a separate Claude Code chat that Tanner asked to evaluate the project. So it is after-the-fact and is labeled that way wherever it appears. It answers the open "timely coverage" question.
+  - Claude's guess for the numbers not yet seen, logged in advance: the time-only model's count equals its alerted by onset count at hospital B (425), because its alert almost never switches off once it is on. The modified SIRS rule lands above 800 of 1,142.
+
 ## Why no new outside data
 
 The other open intensive care datasets either need a credentialed application that takes days, or have no ready-made hourly sepsis label. Building that label ourselves is days of careful work and easy to get wrong. A third hospital is listed as future work.
