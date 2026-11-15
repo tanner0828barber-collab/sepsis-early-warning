@@ -155,6 +155,13 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - So an alert budget set at one hospital does not hold at another, in either direction. Too quiet one way, three times over budget the other way.
   - Utility fell less in this direction (0.380 to 0.330, down 13%, against 35% for A to B), because the utility score punishes misses much more than false alarms.
   - Guess against result: false alarms at A guessed at 25% to 40% (wrong, it was worse: 45.0%). Utility at A guessed at 0.25 to 0.35 (right: 0.330).
+- Sat 11/14, 5:05 PM. PLAN, written before running: compact signature inputs (script scripts/v2_signatures.py). After-the-fact, hospital A only. Source of the idea: an outside literature review Tanner ran (ChatGPT deep research, saved in the planning folder). It reports that the challenge winner (Morrill et al.) went from 0.418 to 0.430 in their own cross-validation by adding path signatures of three signals. Claude has not opened that paper, so those two numbers are the review's reading.
+  - What a signature is here: a short summary of the shape of a signal over the last 7 hours. For partial SOFA, mean arterial pressure, and the BUN to creatinine ratio: how far it moved, the area under its move (did it change early or late in the window), and how jumpy it was (sum of squared hourly changes). Plus, for each pair of the three signals, a term for which one moved first. That is 12 new inputs. The two signals that are not yet model inputs (partial SOFA and the ratio) are added as plain values too, so the candidate has 114 inputs against 100.
+  - Honest limit: this is a compact, hand-computed, order 2 version. No signature library is installed. It is not the winner's full method (order 3, lead-lag on every signal, a different model and training target).
+  - Every new input uses only the current hour and the six before it. Nothing looks ahead.
+  - Test: the same nested cross-validation, the same folds, and the same 25% cap as the hospital A only baseline logged above (utility 0.399, 72.7% alerted by onset, 391 of 1,432 missed). Same settings, 200 trees.
+  - Keep rule: at least 1.5 points more sepsis patients alerted by onset (74.2% or more, so 369 or fewer missed) and utility not below 0.389.
+  - Claude's guess, logged in advance: it fails the keep rule. Utility within 0.005 of 0.399 and alerted by onset within 1 point of 72.7%. Reason: the same three signals as plain values were among the 64 inputs that added only 0.8 points. About a one in five chance it passes.
 
 ## Why no new outside data
 
