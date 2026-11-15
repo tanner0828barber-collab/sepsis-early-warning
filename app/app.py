@@ -773,30 +773,39 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, theme=gr.themes.Base(), analytics_enabled
                     [current, hour, board, timer, play, *pills], show_progress="hidden",
                 )
 
-            hour.change(show, [current, hour], board, show_progress="hidden")
+            # The tiles are redrawn by whichever control moved the hour, in the same reply that moves it.
+            # "input" fires only when a person drags the slider or types an hour. Play and Step set the
+            # hour from code and return the tiles themselves. (Redrawing on every "change" of the slider
+            # left the tiles one hour behind the hour box, because that redraw was sent the old hour.)
+            hour.input(show, [current, hour], board, show_progress="hidden")
 
             def advance(pid, now):
+                """One hour forward: the new hour, the timer, the Play label, and the tiles at that hour."""
                 if not pid:
-                    return now, gr.Timer(active=False), "Play"
+                    return now, gr.Timer(active=False), "Play", show(pid, now)
                 first, last = hours_of(pid)
                 nxt = min(int(now) + 1, last)
                 if nxt >= last:
-                    return nxt, gr.Timer(active=False), "Play"
-                return nxt, gr.Timer(), gr.Button()
+                    return nxt, gr.Timer(active=False), "Play", show(pid, nxt)
+                return nxt, gr.Timer(), gr.Button(), show(pid, nxt)
 
-            step.click(lambda pid, now: advance(pid, now)[0], [current, hour], hour, show_progress="hidden")
-            timer.tick(advance, [current, hour], [hour, timer, play], show_progress="hidden")
+            def step_once(pid, now):
+                nxt, _, _, tiles = advance(pid, now)
+                return nxt, tiles
+
+            step.click(step_once, [current, hour], [hour, board], show_progress="hidden")
+            timer.tick(advance, [current, hour], [hour, timer, play, board], show_progress="hidden")
 
             def toggle(pid, label, now):
                 if not pid:
-                    return gr.Timer(active=False), "Play", now
+                    return gr.Timer(active=False), "Play", now, show(pid, now)
                 if label == "Play":
                     first, last = hours_of(pid)
                     restart = first if int(now) >= last else now   # at the end, Play starts over
-                    return gr.Timer(active=True), "Pause", restart
-                return gr.Timer(active=False), "Play", now
+                    return gr.Timer(active=True), "Pause", restart, show(pid, restart)
+                return gr.Timer(active=False), "Play", now, show(pid, now)
 
-            play.click(toggle, [current, play, hour], [timer, play, hour], show_progress="hidden")
+            play.click(toggle, [current, play, hour], [timer, play, hour, board], show_progress="hidden")
 
         with gr.Tab("Does it travel?"):
             gr.HTML(travel_tab())
