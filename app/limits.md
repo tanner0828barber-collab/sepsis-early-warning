@@ -29,6 +29,14 @@ Because the label is built partly from when staff ordered antibiotics and cultur
 - **Missed:** a sepsis patient with no alert by onset.
 - **False alarm:** a patient who never develops sepsis and is alerted at least once.
 
+## What the Replay screen shows
+
+- **Three states.** Quiet: the score has not crossed the alert line. Alert: it has crossed it at least once, and the tile stays on Alert after that. Missed: onset has passed with no alert. Each state has its own shape, color and word.
+- **The outcome is hidden until the replay reaches it.** The onset marker, the 12 hour window and "What happened" appear only at the onset hour, or at the end of the record for a patient who never developed sepsis. The model never sees them.
+- **A timely catch** on screen is the same thing as "caught" above.
+- **The gray strips in the four small charts** are the scoring ranges of the NEWS2 bedside chart (Royal College of Physicians, 2017), checked against the college's own Chart 1 on November 14, 2026. NEWS2 was made for adults on general wards, not for intensive care. The strips are only there to help read the charts. The model does not use NEWS2, and I do not compute a NEWS2 score.
+- **The four vital signs with tiles** were picked because NEWS2 has ranges for them. The model sees many more inputs, listed in the last tile.
+
 ## Where the alert line came from
 
 It was set once, on 4,068 hospital A patients the model did not train on, so that at most 15% of patients who never developed sepsis were ever alerted. Then it was frozen and committed before hospital B was opened. It was not moved afterward. Because the line was set on those patients, hospital A dev is the calibration set: its numbers describe the operating point and are not an independent test.

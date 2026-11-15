@@ -160,23 +160,28 @@
     ],
     "caption": "The two adjustments use hospital B's measurements and scores but never its sepsis labels. They were planned before the hospital B run and are reported whether or not they helped."
   },
-  "proof": [
-    {
-      "big": "109 of 1,142",
-      "what": "sepsis patients got their first alert in the 12 hours before onset",
-      "where": "Hospital B, 20,000 patients it never trained on. 656 were missed"
-    },
-    {
-      "big": "486 of 1,142",
-      "what": "sepsis patients alerted at or before onset, however early",
-      "where": "109 in the 12 hour window plus 377 more than 12 hours early"
-    },
-    {
-      "big": "7.2%",
-      "what": "of patients who never developed sepsis got an alert",
-      "where": "Hospital B: 1,358 of 18,858 patients. 12.5 false alarms per timely catch. 115 alerts per 1,000 patient-days"
-    }
-  ],
+  "proof": {
+    "title": "Hospital B, 20,000 patients it never trained on",
+    "lede": "Trained at hospital A, frozen, then tested once at hospital B.",
+    "numbers": [
+      {
+        "big": "109 of 1,142",
+        "what": "sepsis patients got a timely alert, in the 12 hours before onset"
+      },
+      {
+        "big": "486",
+        "what": "alerted by onset, however early"
+      },
+      {
+        "big": "656",
+        "what": "missed"
+      },
+      {
+        "big": "7.2%",
+        "what": "false alarms, among patients who never developed sepsis"
+      }
+    ]
+  },
   "warning_chart": {
     "labels": [
       "0 to 2",
@@ -196,7 +201,16 @@
       95,
       216
     ],
-    "title": "Most alerts came more than 12 hours early:<br>377 of the 486 patients alerted by onset",
+    "timely": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false
+    ],
+    "title": "Most alerts came more than 12 hours early: 377 of the 486 patients alerted by onset",
     "source": "Source: Hospital B, 486 sepsis patients with an alert at or before onset. Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
   },
   "limits": "Hospital B, 20,000 patients. These are retrospective results on recorded data, not performance in clinical use.\n\n- **Timely catches are rare.** Of 1,142 sepsis patients, 109 (9.5%) got their first alert in the 12 hours before onset. 377 (33.0%) were alerted earlier than that. 656 (57.4%) were missed.\n- **False alarms.** 1,358 of 18,858 patients who never developed sepsis were alerted at least once (7.2%). That is 12.5 false alarms per timely catch. This counts patients, not alerts.\n- **Workload.** 115 alerts per 1,000 patient-days, and 0.9 repeat alerts per alerted patient.\n- **It did not beat the clock.** A model that sees only hours in the unit scored utility 0.242. The full model scored 0.238.\n- **First-day sepsis.** When the sepsis label starts before hour 24, 57 of 514 patients were alerted by onset (11.1%), against 429 of 628 (68.3%) when it starts later.\n- **Late-entry cases** (label already on in the first recorded hour): the model caught 14 of 223. The modified SIRS rule caught 150 of 223.\n- **Hospital A dev numbers are calibration numbers.** The alert line was set on those 4,068 patients, so their 15.0% false alarm share is true by construction, not a measured result.\n- **The score is not a probability.** It is the model's output divided by the frozen alert cutoff. Calibration was not checked.\n\n### By age and sex, Hospital B\n\n| Group | Sepsis patients | Timely | Alerted by onset | Missed | False alarms |\n|---|---|---|---|---|---|\n| Women | 495 | 44 (8.9%) | 210 (42.4%) | 285 (57.6%) | 545 of 8,773 (6.2%) |\n| Men | 647 | 65 (10.0%) | 276 (42.7%) | 371 (57.3%) | 813 of 10,085 (8.1%) |\n| Under 50 | 276 | 26 (9.4%) | 116 (42.0%) | 160 (58.0%) | 364 of 4,542 (8.0%) |\n| 50 to 64 | 351 | 30 (8.5%) | 141 (40.2%) | 210 (59.8%) | 418 of 5,927 (7.1%) |\n| 65 to 79 | 386 | 38 (9.8%) | 183 (47.4%) | 203 (52.6%) | 462 of 6,196 (7.5%) |\n| 80 and over | 129 | 15 (11.6%) | 46 (35.7%) | 83 (64.3%) | 114 of 2,193 (5.2%) |\n\nThe group with the lowest share alerted by onset is **80 and over**. This is a first check, not a fairness audit. The data has no race, ethnicity, language or insurance fields, so those groups cannot be checked at all.",

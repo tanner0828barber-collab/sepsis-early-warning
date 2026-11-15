@@ -7,19 +7,21 @@ and replays the stay hour by hour. At each hour the model is given only the
 rows up to that hour and really scores them. Nothing is typed in by the user
 and nothing is stored.
 
+The screen is a grid of tiles. Every tile is drawn again at each hour from
+what the model could see at that hour.
+
 This project is a prototype and is not medical advice.
 """
 import json
+import math
 import sys
 from functools import lru_cache
 from pathlib import Path
+from types import SimpleNamespace
 
 import gradio as gr
 import joblib
-import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -48,17 +50,24 @@ SCOREBOARD = json.loads((APP_DATA / "scoreboard.json").read_text())
 LIMITS_TEXT = (Path(__file__).resolve().parent / "limits.md").read_text().replace("RESULTS_PLACEHOLDER", SCOREBOARD["limits"])
 
 # ---------------------------------------------------------------- look and feel
-PAGE, TEXT, SECONDARY, ACCENT = "#FAFAF7", "#111418", "#5B6470", "#2450D8"
-ALERT_TINT, ALERT_LABEL = "#FBDADA", "#A32222"
-WATCH_TINT, WATCH_LABEL = "#FBEFC9", "#7A5600"
-CLEAR_TINT, CLEAR_LABEL = "#DDF3E6", "#14713F"
+NIGHT, TILE, LANE, RULE = "#050608", "#0E1116", "#141922", "#232B37"
+CHALK, FOG = "#E9EEF3", "#8D99A8"
+FLARE, VIOLET, TIDE, AMBER = "#FF6B3D", "#D08BFF", "#6FB3E0", "#F6B84B"
 
-# Names and units, as listed in the dataset's own description on PhysioNet.
-VITAL_STRIPS = [
-    ("HR", "Heart rate", "beats per minute", (40, 160)),
-    ("Temp", "Temperature", "°C", (34, 41)),
-    ("Resp", "Breathing rate", "breaths per minute", (5, 45)),
-    ("MAP", "Mean arterial pressure", "mm Hg", (40, 130)),
+# The four vital sign tiles. Names and units are as listed in the dataset's own description on PhysioNet.
+# The shaded strips are the scoring ranges of the NEWS2 bedside chart, checked on 11/14/2026 against
+# Chart 1 of the Royal College of Physicians NEWS2 report (2017). That chart scores whole numbers, so
+# each edge sits half a step between two values. The model does not use these ranges.
+# (column, name, unit, color, lowest shown, highest shown, [(from, to, NEWS2 points)])
+VITAL_TILES = [
+    ("HR", "Heart rate", "beats per minute", "#62E38A", 30, 150,
+     [(30, 40.5, 3), (40.5, 50.5, 1), (90.5, 110.5, 1), (110.5, 130.5, 2), (130.5, 150, 3)]),
+    ("Temp", "Temperature", "°C", "#F6B84B", 34, 41,
+     [(34, 35.05, 3), (35.05, 36.05, 1), (38.05, 39.05, 1), (39.05, 41, 2)]),
+    ("Resp", "Breathing rate", "breaths per minute", "#4DD8E6", 4, 36,
+     [(4, 8.5, 3), (8.5, 11.5, 1), (20.5, 24.5, 2), (24.5, 36, 3)]),
+    ("SBP", "Systolic blood pressure", "mm Hg", "#7AA8FF", 70, 230,
+     [(70, 90.5, 3), (90.5, 100.5, 2), (100.5, 110.5, 1), (219.5, 230, 3)]),
 ]
 SEEN_TABLE = [
     ("HR", "Heart rate", "beats per minute", "vital"),
@@ -79,56 +88,201 @@ SEEN_TABLE = [
 ]
 STALE_AFTER = {"vital": 4, "lab": 24}  # hours; my own choice, not a clinical standard
 
+# Each state has its own shape, color and word, so color is never the only signal.
+SHAPES = {
+    "quiet": '<circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="2.6"/>',
+    "alert": '<path d="M8 1 15.3 14.5H.7Z" fill="currentColor"/>',
+    "missed": '<path d="M8 .8 15.2 8 8 15.2.8 8Z" fill="currentColor"/>',
+}
+PILL_SHAPE = {"caught": "alert", "false alarm": "alert", "missed": "missed"}
+
 CSS = f"""
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-.gradio-container, .gradio-container * {{ font-family: 'Inter', system-ui, sans-serif !important; }}
-.gradio-container {{ background: {PAGE} !important; color: {TEXT}; max-width: 1000px !important; margin: 0 auto !important; }}
-.narrow {{ max-width: 760px; }}
-.topline {{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }}
-.topline .name {{ font-size: 18px; font-weight: 600; color: {TEXT}; }}
-.topline .tag {{ font-size: 14px; color: {SECONDARY}; border: 1px solid #D5D8DD; border-radius: 999px; padding: 4px 12px; }}
-.promise {{ font-size: 24px; font-weight: 600; line-height: 1.25; color: {TEXT}; margin: 16px 0 8px; max-width: 760px; }}
-.proof {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0; }}
-.proof .cell {{ background: #FFFFFF; border: 1px solid #E4E6EA; border-radius: 12px; padding: 16px; }}
-.proof .big {{ font-size: 40px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; color: {TEXT}; font-variant-numeric: tabular-nums; }}
-.proof .what {{ font-size: 16px; color: {TEXT}; margin-top: 8px; line-height: 1.4; }}
-.proof .where {{ font-size: 14px; color: {SECONDARY}; margin-top: 4px; line-height: 1.4; }}
-.caption {{ font-size: 14px; color: {SECONDARY}; line-height: 1.5; }}
-.card {{ border-radius: 12px; padding: 16px; margin: 8px 0; min-height: 96px; }}
-.card .word {{ font-size: 24px; font-weight: 600; line-height: 1.25; }}
-.card .more {{ font-size: 16px; color: {TEXT}; margin-top: 8px; line-height: 1.5; }}
-.card.clear {{ background: {CLEAR_TINT}; }} .card.clear .word {{ color: {CLEAR_LABEL}; }}
-.card.alert {{ background: {ALERT_TINT}; }} .card.alert .word {{ color: {ALERT_LABEL}; }}
-.card.watch {{ background: {WATCH_TINT}; }} .card.watch .word {{ color: {WATCH_LABEL}; }}
-.card.empty {{ background: #FFFFFF; border: 1px dashed #C9CDD3; }} .card.empty .word {{ color: {SECONDARY}; font-size: 18px; font-weight: 500; }}
-table.plain {{ border-collapse: collapse; width: 100%; font-size: 16px; }}
-table.plain th {{ text-align: left; font-weight: 600; color: {SECONDARY}; font-size: 14px; padding: 8px; border-bottom: 1px solid #D5D8DD; }}
-table.plain td {{ padding: 8px; border-bottom: 1px solid #ECEEF1; color: {TEXT}; font-variant-numeric: tabular-nums; vertical-align: top; }}
-table.plain td.num, table.plain th.num {{ text-align: right; }}
-.range {{ color: {SECONDARY}; font-size: 14px; }}
-.chip {{ display: inline-block; font-size: 14px; border-radius: 999px; padding: 0 8px; margin-left: 8px; }}
-.chip.stale {{ background: {WATCH_TINT}; color: {WATCH_LABEL}; }}
-.chip.none {{ background: #ECEEF1; color: {SECONDARY}; }}
-.finding {{ font-size: 18px; line-height: 1.5; color: {TEXT}; max-width: 760px; margin: 8px 0 16px; }}
-.box {{ background: #FFFFFF; border: 1px solid #E4E6EA; border-radius: 12px; padding: 16px; font-size: 16px; line-height: 1.5; max-width: 760px; }}
-.preview {{ background: {WATCH_TINT}; color: {WATCH_LABEL}; border-radius: 8px; padding: 8px 12px; font-size: 16px; font-weight: 500; }}
-button.pill {{ border-radius: 999px !important; min-height: 48px !important; font-size: 16px !important; }}
-button.go {{ min-height: 48px !important; font-size: 16px !important; }}
-button.go.primary {{ background: {ACCENT} !important; color: #FFFFFF !important; border-color: {ACCENT} !important; }}
-.chart {{ min-height: 740px; }}
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;600&display=swap');
+body, gradio-app {{ background: {NIGHT} !important; }}
+.gradio-container, .gradio-container * {{ font-family: 'IBM Plex Sans', system-ui, sans-serif !important; }}
+.gradio-container {{
+  background: {NIGHT} !important; color: {CHALK}; max-width: 1180px !important; margin: 0 auto !important; padding: 18px 20px 40px !important;
+  font-size: 16px; line-height: 1.5;
+  --body-background-fill: {NIGHT}; --background-fill-primary: {NIGHT}; --background-fill-secondary: {TILE};
+  --block-background-fill: transparent; --block-border-color: transparent; --border-color-primary: {RULE}; --border-color-accent: {CHALK};
+  --body-text-color: {CHALK}; --body-text-color-subdued: {FOG}; --block-label-text-color: {FOG}; --block-title-text-color: {FOG};
+  --block-label-background-fill: transparent; --block-title-background-fill: transparent;
+  --input-background-fill: {LANE}; --input-border-color: {RULE}; --input-placeholder-color: {FOG};
+  --button-secondary-background-fill: {LANE}; --button-secondary-background-fill-hover: {RULE}; --button-secondary-text-color: {CHALK};
+  --button-secondary-text-color-hover: {CHALK}; --button-secondary-border-color: transparent; --button-secondary-border-color-hover: {FOG};
+  --button-primary-background-fill: {CHALK}; --button-primary-background-fill-hover: #FFFFFF; --button-primary-text-color: {NIGHT};
+  --button-primary-text-color-hover: {NIGHT}; --button-primary-border-color: {CHALK}; --button-primary-border-color-hover: #FFFFFF;
+  --slider-color: {CHALK}; --color-accent: {CHALK}; --color-accent-soft: {LANE}; --link-text-color: {TIDE}; --link-text-color-hover: {TIDE};
+  --link-text-color-visited: {TIDE}; --link-text-color-active: {TIDE}; --table-border-color: {RULE}; --table-even-background-fill: transparent;
+  --table-odd-background-fill: transparent; --neutral-200: {RULE}; --neutral-700: {RULE}; --neutral-800: {TILE}; --shadow-drop: none; --shadow-drop-lg: none;
+  --block-shadow: none; --layout-gap: 14px;
+}}
+.gradio-container .prose {{ font-size: 16px; line-height: 1.5; }}
+.gradio-container .display, .gradio-container .display * {{ font-family: 'Sora', 'IBM Plex Sans', system-ui, sans-serif !important; }}
+.gradio-container :is(button, a, input, [tabindex]):focus-visible {{ outline: 3px solid {TIDE} !important; outline-offset: 2px; }}
 footer {{ display: none !important; }}
-@media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; animation: none !important; }} }}
+
+.topline {{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 16px; }}
+.topline .name {{ font-weight: 800; font-size: 22px; letter-spacing: -.01em; color: {CHALK}; }}
+.topline .tag {{ color: {FOG}; font-size: 14px; border: 1px solid {RULE}; border-radius: 999px; padding: 4px 12px; }}
+.preview {{ background: rgba(246,184,75,.16); color: {AMBER}; border-radius: 12px; padding: 8px 14px; font-weight: 600; }}
+
+/* the three tabs, drawn as one rounded switch */
+.gradio-container .tab-nav {{ display: inline-flex; gap: 4px; background: {TILE}; border: 1px solid rgba(255,255,255,.07) !important; border-radius: 999px; padding: 4px; margin: 6px 0 14px; width: fit-content; max-width: 100%; overflow-x: auto; flex-wrap: nowrap; }}
+.gradio-container .tab-nav button {{ color: {FOG}; background: transparent; border: 0 !important; border-radius: 999px !important; padding: 8px 16px; font-weight: 600; font-size: 16px; white-space: nowrap; }}
+.gradio-container .tab-nav button.selected {{ color: {NIGHT}; background: {CHALK}; }}
+.gradio-container .tabitem {{ border: 0 !important; padding: 0 !important; background: transparent !important; }}
+
+/* tiles */
+.tile {{ background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 18px 20px; min-width: 0; color: {CHALK}; }}
+.tile h3 {{ margin: 0; font-size: 14px; font-weight: 600; color: {FOG}; display: flex; align-items: center; gap: 8px; line-height: 1.4; }}
+.grid12 {{ display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }}
+.caption {{ font-size: 14px; color: {FOG}; line-height: 1.5; margin: 0; }}
+.source {{ color: {FOG}; font-size: 14px; line-height: 1.5; margin: 16px 2px 0; max-width: 105ch; }}
+
+/* the controls tile: saved patients, the hour slider, Play and Step */
+.gradio-container .transport {{ background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 12px 14px 10px; gap: 8px; margin-bottom: 14px; }}
+.gradio-container .transport .buttons {{ flex-wrap: wrap; gap: 10px; align-items: center; }}
+.gradio-container .transport button {{ flex: 0 0 auto; min-width: 0 !important; width: auto; min-height: 46px; padding: 0 16px; border-radius: 14px; font-size: 16px; font-weight: 600; border: 1px solid transparent; }}
+.gradio-container .transport button.pill.primary {{ background: {LANE}; color: {CHALK}; border-color: {CHALK}; }}
+.gradio-container .transport button.pill::before {{ content: ""; width: 12px; height: 12px; margin-right: 8px; flex: none; }}
+.gradio-container .transport button.pill.alert::before {{ background: {FLARE}; clip-path: polygon(50% 0, 100% 100%, 0 100%); }}
+.gradio-container .transport button.pill.missed::before {{ background: {VIOLET}; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }}
+.gradio-container .transport button.go {{ padding: 0 20px; }}
+.gradio-container .transport button.go.secondary {{ background: transparent; border-color: {RULE}; }}
+.gradio-container .transport .spacer {{ flex: 1 1 0; min-width: 0 !important; }}
+.gradio-container .transport .form {{ background: transparent; border: 0; box-shadow: none; }}
+.gradio-container .transport .hour {{ padding: 0 4px !important; border: 0 !important; background: transparent !important; }}
+.gradio-container .transport .hour label span, .gradio-container .transport .hour .head span {{ color: {FOG}; font-size: 14px; font-weight: 600; }}
+.gradio-container .transport .hour input[type=number] {{ background: {LANE}; color: {CHALK}; border: 1px solid {RULE}; border-radius: 10px; font-weight: 600; font-size: 16px; }}
+.gradio-container .transport .hour input[type=range] {{ accent-color: {CHALK}; }}
+
+/* the state tile */
+.state {{ grid-column: span 4; grid-row: span 2; display: flex; flex-direction: column; justify-content: flex-end; min-height: 330px; position: relative; overflow: hidden; }}
+.state .corner {{ position: absolute; top: 18px; left: 20px; right: 20px; display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; }}
+.state .corner span {{ color: #C5CED8; }}
+.state .word {{ font-weight: 800; font-size: clamp(44px, 5.4vw, 68px); line-height: 1; letter-spacing: -.03em; display: flex; align-items: center; gap: .16em; margin-bottom: 10px; }}
+.state .word svg {{ width: .66em; height: .66em; flex: none; }}
+.state .lead {{ font-size: 20px; font-weight: 600; margin: 0 0 6px; }}
+.state p {{ margin: 0 0 6px; }}
+.state.alert {{ background: radial-gradient(120% 90% at 0% 0%, rgba(255,107,61,.34), rgba(255,107,61,.05) 62%), {TILE}; border-color: rgba(255,107,61,.5); }}
+.state.alert .word, .state.alert .word * {{ color: {FLARE}; }}
+.state.missed {{ background: radial-gradient(120% 90% at 0% 0%, rgba(208,139,255,.30), rgba(208,139,255,.05) 62%), {TILE}; border-color: rgba(208,139,255,.5); }}
+.state.missed .word, .state.missed .word * {{ color: {VIOLET}; }}
+.state.quiet .word, .state.quiet .word * {{ color: {CHALK}; }}
+
+/* the four vital sign tiles */
+.vital {{ grid-column: span 4; display: flex; flex-direction: column; gap: 6px; }}
+.vital h3 i {{ width: 9px; height: 9px; border-radius: 50%; background: var(--c); }}
+.vital .val {{ display: flex; align-items: flex-end; gap: 12px; }}
+.vital .val b {{ font-weight: 700; font-size: 52px; line-height: 1; letter-spacing: -.03em; color: var(--c); }}
+.vital .val span {{ color: {FOG}; font-size: 13.5px; line-height: 1.35; padding-bottom: 4px; }}
+.vital .val b.none {{ font-size: 20px; line-height: 52px; color: {FOG}; letter-spacing: 0; font-weight: 400; }}
+.vital svg {{ width: 100%; height: auto; display: block; border-radius: 8px; background: {LANE}; margin-top: auto; }}
+
+/* the score tile */
+.scoretile {{ grid-column: span 12; }}
+.scorehead {{ display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 16px; margin: 4px 0 6px; }}
+.scorehead b {{ font-weight: 700; font-size: 52px; line-height: 1; letter-spacing: -.03em; }}
+.scorehead b.hot {{ color: {FLARE}; }}
+.scorehead span {{ color: {FOG}; padding-bottom: 5px; }}
+.scoretile svg {{ width: 100%; height: auto; }}
+.tile svg.wide {{ display: block; }} .tile svg.narrow {{ display: none; }}
+svg .lane {{ fill: {LANE}; }} svg .over {{ fill: rgba(255,107,61,.09); }} svg .window {{ fill: rgba(233,238,243,.09); }}
+svg .grid {{ stroke: {RULE}; stroke-width: 1; }} svg .alertline {{ stroke: {FLARE}; stroke-width: 1.6; stroke-dasharray: 7 5; }}
+svg .scoreline {{ fill: none; stroke: {CHALK}; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }}
+svg .hotdot {{ fill: {FLARE}; stroke: {NIGHT}; stroke-width: 1; }} svg .nowdot {{ fill: {CHALK}; stroke: {NIGHT}; stroke-width: 1.5; }}
+svg .tick {{ fill: {FOG}; font-size: 12.5px; }} svg .alerttext {{ fill: {FLARE}; font-size: 12.5px; }}
+svg .band1 {{ fill: rgba(233,238,243,.05); }} svg .band2 {{ fill: rgba(233,238,243,.10); }} svg .band3 {{ fill: rgba(233,238,243,.16); }}
+svg .halo {{ paint-order: stroke; stroke: {TILE}; stroke-width: 5px; stroke-linejoin: round; font-size: 12.5px; }}
+svg .mk-label {{ stroke: {FOG}; stroke-width: 1.4; stroke-dasharray: 2 4; }} svg .mk-label-t {{ fill: {FOG}; }}
+svg .mk-alert {{ stroke: {FLARE}; stroke-width: 2; }} svg .mk-alert-t {{ fill: {FLARE}; font-weight: 600; }} svg .mk-alert-head {{ fill: {FLARE}; }}
+svg .mk-onset {{ stroke: {CHALK}; stroke-width: 2; }} svg .mk-onset-t {{ fill: {CHALK}; font-weight: 600; }}
+
+/* what happened, and the hospital B numbers */
+.happened {{ grid-column: span 7; display: flex; flex-direction: column; }}
+.happened .head {{ font-weight: 700; font-size: 34px; line-height: 1.1; letter-spacing: -.02em; margin: 8px 0 4px; }}
+.happened p {{ margin: 0 0 6px; max-width: 56ch; }}
+.happened svg {{ width: 100%; height: auto; margin-top: auto; }}
+.happened.shut {{ border-style: dashed; border-color: {RULE}; }} .happened.shut .head {{ color: {FOG}; }}
+.proof {{ grid-column: span 5; }}
+.proof .lede {{ margin: 6px 0 10px; }}
+.nums {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 16px; }}
+.nums div b {{ display: block; font-weight: 700; font-size: 30px; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }}
+.nums div.first {{ grid-column: span 3; }} .nums div.first b {{ font-size: 40px; }}
+.nums span {{ color: {FOG}; font-size: 14px; line-height: 1.35; display: block; }}
+
+/* every input the model could see */
+.inputs {{ grid-column: span 12; }}
+.cells {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(172px, 1fr)); gap: 10px; margin: 10px 0; }}
+.cell {{ background: {LANE}; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 1px; }}
+.cell span {{ color: {FOG}; font-size: 13px; }}
+.cell b {{ font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }}
+.cell small {{ color: {FOG}; font-weight: 400; font-size: 13px; }}
+.cell b.none {{ color: {FOG}; font-size: 15px; font-weight: 400; }}
+.cell em {{ font-style: normal; background: rgba(246,184,75,.16); color: {AMBER}; border-radius: 4px; padding: 0 6px; margin-left: 4px; }}
+.wide12 {{ grid-column: span 12; }}
+
+/* the "Does it travel?" tab */
+.headline {{ font-weight: 700; font-size: 30px; line-height: 1.15; letter-spacing: -.02em; margin: 2px 0 10px; max-width: 26ch; }}
+.finding {{ font-size: 18px; line-height: 1.5; margin: 0; max-width: 78ch; }}
+.tile .scroll {{ overflow-x: auto; margin-top: 10px; }}
+.gradio-container table.plain {{ border-collapse: collapse; width: 100%; font-size: 16px; border: 0 !important; margin: 0; }}
+.gradio-container table.plain :is(th, td) {{ border: 0 !important; border-bottom: 1px solid {RULE} !important; padding: 8px; background: transparent !important; }}
+.gradio-container table.plain tr {{ border: 0 !important; }}
+.gradio-container table.plain th {{ text-align: left; font-weight: 600; color: {FOG}; font-size: 14px; vertical-align: bottom; }}
+.gradio-container table.plain td {{ color: {CHALK}; font-variant-numeric: tabular-nums; vertical-align: top; }}
+.gradio-container table.plain tr:last-child td {{ border-bottom: 0 !important; }}
+.gradio-container table.plain :is(td.num, th.num) {{ text-align: right; }}
+.gradio-container table.plain.many {{ min-width: 860px; }}
+.tile .scroll + .caption, .tile .barkey + .caption {{ margin-top: 10px; }}
+.range {{ color: {FOG}; font-size: 14px; }}
+.charttitle {{ font-weight: 700; font-size: 22px; line-height: 1.2; letter-spacing: -.01em; margin: 8px 0 14px; max-width: 40ch; color: {CHALK}; }}
+.bars {{ display: flex; align-items: flex-end; gap: 10px; height: 250px; }}
+.bars .bar {{ flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }}
+.bars .bar b {{ font-weight: 700; font-size: 20px; }}
+.bars .bar i {{ display: block; width: 100%; background: #56616F; border-radius: 8px 8px 2px 2px; min-height: 2px; }}
+.bars .bar.timely i {{ background: {CHALK}; }}
+.barlabels {{ display: flex; gap: 10px; margin-top: 6px; }}
+.barlabels span {{ flex: 1; text-align: center; color: {FOG}; font-size: 13.5px; line-height: 1.3; min-width: 0; }}
+.barkey {{ display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; margin: 12px 0 8px; }}
+.barkey span {{ color: {FOG}; }}
+.barkey i {{ display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; }}
+.box {{ font-size: 16px; line-height: 1.55; max-width: 90ch; }}
+
+/* the limits tab */
+.gradio-container .limits {{ background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 22px 26px; }}
+.gradio-container .limits .prose {{ max-width: 80ch; color: {CHALK}; font-size: 16px; background: transparent; border: 0; padding: 0; }}
+.gradio-container .limits .prose :is(h1, h2, h3, strong, th, td, li, p) {{ color: {CHALK}; }}
+.gradio-container .limits .prose h1 {{ font-size: 30px; letter-spacing: -.02em; }}
+.gradio-container .limits .prose h2 {{ font-size: 20px; margin-top: 26px; }}
+.gradio-container .limits .prose :is(th, td) {{ border-color: {RULE} !important; background: transparent !important; }}
+.gradio-container .limits .prose table {{ display: block; overflow-x: auto; }}
+.gradio-container .limits .prose tr {{ border-color: {RULE} !important; }}
+
+@media (max-width: 900px) {{
+  .state {{ grid-column: span 12; min-height: 0; padding-top: 52px; }} .state .word {{ font-size: 64px; }} .vital {{ grid-column: span 6; }} .happened, .proof {{ grid-column: span 12; }}
+}}
+/* Gradio adds its own prefix to rules inside a media block, so these must not start with .gradio-container */
+@media (max-width: 600px) {{
+  .grid12 {{ gap: 10px; }} .tile {{ border-radius: 18px; padding: 14px; }}
+  .tile svg.wide {{ display: none; }} .tile svg.narrow {{ display: block; }} .state {{ padding-top: 46px; }}
+  .tabs .tab-nav {{ border-radius: 22px; flex-wrap: wrap; }}
+  .state .word {{ font-size: 56px; }}
+  .vital .val {{ flex-direction: column; align-items: flex-start; gap: 2px; }} .vital .val b {{ font-size: 40px; }} .vital .val b.none {{ line-height: 40px; }}
+  .transport .buttons button.pill {{ flex: 1 1 calc(50% - 5px) !important; width: auto !important; padding: 0 10px; }}
+  .transport .buttons button.go {{ flex: 1 1 calc(50% - 5px) !important; width: auto !important; }}
+  .transport .buttons .spacer {{ display: none; }}
+  .nums {{ grid-template-columns: 1fr 1fr; }} .nums div.first {{ grid-column: span 2; }} .nums div.first b {{ font-size: 34px; }}
+  .cells {{ grid-template-columns: 1fr 1fr; }} .headline {{ font-size: 24px; }} .finding {{ font-size: 16px; }}
+  .bars {{ gap: 4px; height: 200px; }} .barlabels {{ gap: 4px; }} .bars .bar b {{ font-size: 15px; }} .barlabels span {{ font-size: 11.5px; }}
+  .tabitem .limits {{ padding: 16px; }}
+}}
+@media (prefers-reduced-motion: reduce) {{ * {{ transition: none !important; animation: none !important; scroll-behavior: auto !important; }} }}
 """
 
-FORCE_LIGHT = """
-() => {
-  const url = new URL(window.location);
-  if (url.searchParams.get('__theme') !== 'light') {
-    url.searchParams.set('__theme', 'light');
-    window.location.replace(url.href);
-  }
-}
-"""
+# The page is drawn dark whatever the visitor's system setting is.
+FORCE_DARK = "() => { document.body.classList.add('dark'); document.documentElement.style.colorScheme = 'dark'; }"
 
 
 # ---------------------------------------------------------------- the model at one hour
@@ -171,181 +325,296 @@ def hours_of(pid):
     return int(rows.ICULOS.iloc[0]), int(rows.ICULOS.iloc[-1])
 
 
-# ---------------------------------------------------------------- pieces of the screen
 def plural(n, word):
     n = int(n)
     return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
 
-def make_chart(pid, hour):
+def moment(pid, hour):
+    """Everything the tiles need for one patient at one hour.
+
+    The scores come from seen_so_far, so they use only rows up to `hour`.
+    The outcome fields (onset, miss, hours of warning) are worked out here but
+    each tile shows them only when `revealed` or `ended` says the replay has got there.
+    """
     first, last = hours_of(pid)
     seen = seen_so_far(pid, hour)
     rows = record(pid)
     rows = rows[rows.ICULOS <= hour]
     facts = truth(pid)
-
-    titles = ["Model score divided by the frozen alert cutoff (1 = the alert line). Not a probability."] + [
-        f"{name} ({unit})" for _, name, unit, _ in VITAL_STRIPS
-    ]
-    fig = make_subplots(
-        rows=5, cols=1, shared_xaxes=True, vertical_spacing=0.06,
-        row_heights=[0.36, 0.16, 0.16, 0.16, 0.16], subplot_titles=titles,
-    )
-
-    # the score, drawn as a multiple of the frozen alert line
-    relative = np.clip(seen["score"] / THRESHOLD, 0.03, 30)
-    fig.add_trace(go.Scatter(
-        x=seen.ICULOS, y=relative, mode="lines+markers", line=dict(color=ACCENT, width=2),
-        marker=dict(size=5), name="Model score divided by the frozen alert cutoff",
-        hovertemplate="Hour %{x}: %{y:.2f} times the alert line<extra></extra>",
-    ), row=1, col=1)
-    fig.add_hline(y=1, line=dict(color=ALERT_LABEL, width=1.5, dash="dash"), row=1, col=1)
-    fig.add_annotation(
-        x=first, y=np.log10(1), xref="x", yref="y", text="Alert line, frozen on hospital A",
-        showarrow=False, xanchor="left", yanchor="bottom", font=dict(size=13, color=ALERT_LABEL),
-    )
-    fig.update_yaxes(
-        type="log", range=[np.log10(0.03), np.log10(30)], tickvals=[0.1, 1, 10],
-        ticktext=["0.1", "1", "10"], row=1, col=1,
-    )
-
-    # markers, each a line plus a word, shown only once the replay reaches them
+    relative = (seen["score"] / THRESHOLD).tolist()   # the score as a multiple of the frozen alert line
     alerting = seen[seen["score"] >= THRESHOLD]
+    first_alert = int(alerting.ICULOS.iloc[0]) if not alerting.empty else None
+    revealed = bool(facts["sepsis"] and facts["onset"] <= hour)
+    in_time = bool(facts["sepsis"] and first_alert is not None and first_alert <= facts["onset"])
+    return SimpleNamespace(
+        pid=pid, hour=hour, first=first, last=last, span=max(last - first, 1), seen=seen, rows=rows,
+        hours=seen.ICULOS.tolist(), relative=relative, now=seen.iloc[-1], now_relative=relative[-1],
+        sepsis=facts["sepsis"], label_start=facts["label_start"], onset=facts["onset"],
+        first_alert=first_alert, revealed=revealed, missed=revealed and not in_time,
+        warned=(facts["onset"] - first_alert) if revealed and in_time else None, ended=hour >= last,
+    )
+
+
+def marker_list(m):
+    """The three markers, each shown only once the replay reaches it."""
     marks = []
-    if not alerting.empty:
-        marks.append((int(alerting.ICULOS.iloc[0]), "First alert", ALERT_LABEL, 0.94))
-    if facts["sepsis"]:
-        if facts["label_start"] <= hour:
-            marks.append((facts["label_start"], "Label start", SECONDARY, 0.81))
-        if facts["onset"] <= hour:
-            marks.append((facts["onset"], "Onset", TEXT, 0.68))
-    for x, word, color, height in marks:
-        fig.add_vline(x=x, line=dict(color=color, width=1.5, dash="dot"))
-        fig.add_annotation(
-            x=x, y=height, xref="x", yref="y domain", text=word, showarrow=False,   # inside the top strip
-            xanchor="left", xshift=4, font=dict(size=13, color=color),
-            bgcolor="rgba(250,250,247,0.9)",
-        )
-
-    # vital sign strips: a dot is a real measurement, a faint dashed line is a carried value
-    for i, (column, name, unit, limits) in enumerate(VITAL_STRIPS, start=2):
-        carried = seen[f"last_{column}"].clip(*limits)
-        fig.add_trace(go.Scatter(
-            x=seen.ICULOS, y=carried, mode="lines", line=dict(color="#9AA1AC", width=1, dash="dash", shape="hv"),
-            hoverinfo="skip",
-        ), row=i, col=1)
-        measured = rows[rows[column].notna()]
-        fig.add_trace(go.Scatter(
-            x=measured.ICULOS, y=measured[column].clip(*limits), mode="markers",
-            marker=dict(size=6, color=TEXT), name=name,
-            hovertemplate="Hour %{x}: %{y:.1f} " + unit + " (measured)<extra></extra>",
-        ), row=i, col=1)
-        fig.update_yaxes(range=list(limits), nticks=3, row=i, col=1)
-
-    fig.update_xaxes(range=[first - 0.5, last + 0.5], showgrid=False)
-    fig.update_xaxes(title_text="Hours in the unit", row=5, col=1)
-    fig.update_yaxes(gridcolor="#ECEEF1", zeroline=False)
-    fig.update_annotations(font_family="Inter, system-ui, sans-serif")
-    for annotation in fig.layout.annotations[:5]:   # the strip titles: left aligned, small
-        annotation.update(x=0, xanchor="left", font=dict(size=14, color=SECONDARY))
-    # the top strip's title sits above the plot area, where the page clips it. Lower the strip to make room.
-    bottom, top = fig.layout.yaxis.domain
-    fig.update_layout(yaxis=dict(domain=[bottom, top - 0.04]))
-    fig.layout.annotations[0].update(y=top - 0.04)
-    fig.update_layout(
-        height=720, showlegend=False, paper_bgcolor=PAGE, plot_bgcolor="#FFFFFF",
-        margin=dict(l=48, r=16, t=40, b=48),
-        font=dict(family="Inter, system-ui, sans-serif", size=14, color=TEXT),
-        transition_duration=0,
-    )
-    return fig
+    if m.first_alert is not None:
+        marks.append((m.first_alert, "First alert", "mk-alert", True))
+    if m.revealed:
+        marks.append((m.onset, "Onset", "mk-onset", True))
+    if m.sepsis and m.label_start <= m.hour:
+        marks.append((m.label_start, "Label start", "mk-label", False))
+    return marks
 
 
-def status_card(pid, hour):
-    first, last = hours_of(pid)
-    seen = seen_so_far(pid, hour)
-    facts = truth(pid)
-    alerting = seen[seen["score"] >= THRESHOLD]
-    now_on = bool(seen["score"].iloc[-1] >= THRESHOLD)
+# ---------------------------------------------------------------- the tiles
+def shape(kind):
+    return f'<svg viewBox="0 0 16 16" aria-hidden="true">{SHAPES[kind]}</svg>'
 
-    missed = facts["sepsis"] and hour >= facts["onset"] and alerting[alerting.ICULOS <= facts["onset"]].empty
-    if missed:
-        # a miss gets its own state: amber, a diamond and the word, never the green "no alert" card
-        kind, word = "watch", "◆ MISSED: no alert by onset"
-        more = [f"Hour {hour}."]
-        if not alerting.empty:
-            more.append(f"The first alert came at hour {int(alerting.ICULOS.iloc[0])}, after onset.")
-    elif alerting.empty:
-        kind, word = "clear", "✓ No alert"
-        more = [f"Hour {hour}. The score has stayed under the alert line."]
+
+def state_tile(m, label):
+    """Quiet, Alert or Missed: a shape, a color and a word together."""
+    if m.missed:
+        kind, word, lead = "missed", "Missed", "No alert by onset."
+        text = [f"Sepsis onset was at hour {m.onset}. The score never crossed the alert line in time."]
+        if m.first_alert is not None:
+            text.append(f"The first alert came at hour {m.first_alert}, after onset.")
+    elif m.first_alert is None:
+        kind, word, lead = "quiet", "Quiet", "No alert."
+        text = ["The score has stayed under the alert line."]
     else:
-        fired = int(alerting.ICULOS.iloc[0])
-        kind, word = "alert", "▲ ALERT: look at this patient first"
-        more = [f"First fired at hour {fired}."]
-        if not now_on:
-            more.append("The score is back under the alert line now.")
-
-    # what really happened, revealed only when the replay reaches it
-    if facts["sepsis"] and hour >= facts["onset"]:
-        by_onset = alerting[alerting.ICULOS <= facts["onset"]]
-        if by_onset.empty:
-            more.append(f"Sepsis onset was at hour {facts['onset']}. The score never crossed the alert line in time. This is a miss.")
+        kind, word, lead = "alert", "Alert", "Look at this patient first."
+        if m.warned is not None:
+            text = [f"First fired at hour {m.first_alert}, {plural(m.warned, 'hour')} before sepsis onset at hour {m.onset}."]
         else:
-            warned = facts["onset"] - int(by_onset.ICULOS.iloc[0])
-            more.append(f"Sepsis onset was at hour {facts['onset']}. The alert came {plural(warned, 'hour')} before.")
-    elif facts["sepsis"] and hour >= last:
-        more.append("The record ends before the onset hour.")
-    if not facts["sepsis"] and hour >= last:
-        if alerting.empty:
-            more.append("End of the record. This patient never developed sepsis, and there was no alert.")
-        else:
-            more.append("End of the record. This patient never developed sepsis. This alert was a false alarm.")
-
-    return f'<div class="card {kind}" role="status"><div class="word">{word}</div><div class="more">{" ".join(more)}</div></div>'
+            text = [f"First fired at hour {m.first_alert}."]
+        if m.now_relative < 1:
+            text.append("The score is back under the alert line now.")
+    return (
+        f'<section class="tile state {kind}"><div class="corner"><span>{label}</span><span>Hour {m.hour} of {m.last}</span></div>'
+        f'<div role="status"><div class="word display">{shape(kind)}<span>{word}</span></div>'
+        f'<p class="lead">{lead}</p>{"".join(f"<p>{t}</p>" for t in text)}</div></section>'
+    )
 
 
-def seen_table(pid, hour):
-    now = seen_so_far(pid, hour).iloc[-1]
-    lines = []
+def vital_tile(m, column, name, unit, color, low, high, bands):
+    """One vital sign: the latest value the model could see, over a small chart of the stay so far."""
+    width, height = 360, 70
+    x = lambda h: 4 + (h - m.first) / m.span * (width - 8)
+    y = lambda v: 3 + (high - min(max(v, low), high)) / (high - low) * (height - 6)
+    parts = [f'<rect x="0" y="{y(b):.1f}" width="{width}" height="{y(a) - y(b):.1f}" class="band{points}"/>' for a, b, points in bands]
+    if m.first_alert is not None:
+        parts.append(f'<line x1="{x(m.first_alert):.1f}" x2="{x(m.first_alert):.1f}" y1="0" y2="{height}" class="mk-alert" opacity=".7"/>')
+    if m.revealed:
+        parts.append(f'<line x1="{x(m.onset):.1f}" x2="{x(m.onset):.1f}" y1="0" y2="{height}" class="mk-onset" opacity=".7"/>')
+    # a dot is a real measurement; the line carries the last one forward
+    path, end = "", None
+    for h, v in zip(m.hours, m.seen[f"last_{column}"]):
+        if pd.isna(v):
+            continue
+        path += f"M{x(h):.1f},{y(v):.1f} " if not path else f"H{x(h):.1f} V{y(v):.1f} "
+        end = (x(h), y(v))
+    if path:
+        parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="1.4" opacity=".55"/>')
+    for h, v in zip(m.rows.ICULOS, m.rows[column]):
+        if not pd.isna(v):
+            parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="2.1" fill="{color}"><title>Hour {int(h)}: {v:g} {unit} (measured)</title></circle>')
+    if end:
+        parts.append(f'<circle cx="{end[0]:.1f}" cy="{end[1]:.1f}" r="4" fill="{color}" stroke="{TILE}" stroke-width="1.5"/>')
+    value, age = m.now[f"last_{column}"], m.now[f"hours_since_{column}"]
+    if pd.isna(value):
+        big, when = '<b class="none">not measured yet</b>', ""
+    else:
+        big = f'<b class="display">{value:.1f}</b>' if column == "Temp" else f'<b class="display">{value:.0f}</b>'
+        when = f'<span>{unit}<br>measured {"this hour" if age == 0 else plural(age, "hour") + " ago"}</span>'
+    return (
+        f'<section class="tile vital" style="--c:{color}"><h3><i></i>{name}</h3><div class="val">{big}{when}</div>'
+        f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="{name}, hours {m.first} to {m.hour}">{"".join(parts)}</svg></section>'
+    )
+
+
+def score_chart(m, narrow=False):
+    """The model score over the stay so far, as a multiple of the frozen alert line, with the markers.
+
+    `narrow` is the phone layout: the same data with fewer pixels across.
+    """
+    width, left, right = (380, 30, 8) if narrow else (1100, 40, 14)
+    plot, font = width - left - right, 12.5
+    rail = [14, 30, 46]                     # one row per marker word, so two words never share a line
+    top, tall = 56, 150 if narrow else 170
+    bottom = top + tall
+    x = lambda h: left + (h - m.first) / m.span * plot
+    low, high = math.log10(0.03), math.log10(30)   # log scale from 0.03 to 30 times the alert line
+    y = lambda v: top + (high - math.log10(min(max(v, 0.03), 30))) / (high - low) * tall
+    parts = [
+        '<defs><linearGradient id="under" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9EEF3" stop-opacity=".16"/>'
+        '<stop offset="1" stop-color="#E9EEF3" stop-opacity="0"/></linearGradient></defs>',
+        f'<rect x="{left}" y="{top}" width="{plot}" height="{tall}" rx="8" class="lane"/>',
+        f'<rect x="{left}" y="{top}" width="{plot}" height="{y(1) - top:.1f}" class="over"/>',
+    ]
+    if m.revealed:   # the 12 hours before onset, where a first alert counts as timely
+        start = max(x(m.onset - 12), left)
+        parts.append(f'<rect x="{start:.1f}" y="{top}" width="{x(m.onset) - start:.1f}" height="{tall}" class="window"/>')
+    for value, text in [(10, "10"), (1, "1"), (0.1, "0.1")]:
+        parts.append(
+            f'<line x1="{left}" x2="{left + plot}" y1="{y(value):.1f}" y2="{y(value):.1f}" class="{"alertline" if value == 1 else "grid"}"/>'
+            f'<text x="{left - 6}" y="{y(value) + 4:.1f}" class="tick" text-anchor="end">{text}</text>'
+        )
+    parts.append(f'<text x="{left + 8}" y="{y(1) - 6:.1f}" class="alerttext">Alert line, frozen on hospital A</text>')
+    points = [(x(h), y(v)) for h, v in zip(m.hours, m.relative)]
+    if len(points) > 1:
+        line = " ".join(f"{a:.1f},{b:.1f}" for a, b in points)
+        parts.append(f'<polygon points="{points[0][0]:.1f},{bottom} {line} {points[-1][0]:.1f},{bottom}" fill="url(#under)"/>')
+        parts.append(f'<polyline points="{line}" class="scoreline"/>')
+    for h, v in zip(m.hours, m.relative):
+        if v >= 1:
+            parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="3.4" class="hotdot"><title>Hour {int(h)}: {v:.2f} times the alert line</title></circle>')
+    parts.append(f'<circle cx="{points[-1][0]:.1f}" cy="{points[-1][1]:.1f}" r="4.6" class="nowdot"/>')
+    every = next(s for s in (1, 2, 5, 10, 20, 50, 100, 200, 500) if m.span / s <= (5 if narrow else 14))
+    for h in range((m.first // every + 1) * every, m.last + 1, every):
+        parts.append(f'<text x="{x(h):.1f}" y="{bottom + 17}" class="tick" text-anchor="middle">{h}</text>')
+    parts.append(f'<text x="{left + plot}" y="{bottom + 36}" class="tick" text-anchor="end">Hours in the unit</text>')
+
+    # markers: a line down the chart and a word on its own row above it. A word goes on the side of
+    # its line where it fits and crosses the fewest other lines.
+    poles = []
+    for row, (h, word, style, bold) in enumerate(marker_list(m)):
+        at, base, room = x(h), rail[row], len(word) * font * (0.62 if bold else 0.56)
+        sides = [("start", at + 7), ("end", at - 7 - room)]
+        if style == "mk-label":
+            sides.reverse()
+        best = None
+        for anchor, begin in sides:
+            if begin < 2 or begin + room > width - 2:
+                continue
+            crossed = sum(1 for pole, pole_row in poles if pole_row < row and begin - 3 < pole < begin + room + 3)
+            if best is None or crossed < best[0]:
+                best = (crossed, anchor)
+        anchor = best[1] if best else "end"
+        parts.append(f'<line x1="{at:.1f}" x2="{at:.1f}" y1="{base - 9}" y2="{bottom}" class="{style}"/>')
+        if style == "mk-alert":
+            parts.append(f'<path d="M{at - 5.5:.1f},{base - 1} L{at:.1f},{base - 11} L{at + 5.5:.1f},{base - 1}Z" class="mk-alert-head"/>')
+        parts.append(f'<text x="{at + (7 if anchor == "start" else -7):.1f}" y="{base}" class="{style}-t halo" text-anchor="{anchor}">{word}</text>')
+        poles.append((at, row))
+    label = f"Model score, hours {m.first} to {m.hour}. It is {m.now_relative:.2f} times the alert line now."
+    return f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} {bottom + 42}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
+
+
+def score_tile(m):
+    return (
+        '<section class="tile scoretile"><h3>Model score divided by the frozen alert cutoff. Not a probability.</h3>'
+        f'<div class="scorehead"><b class="display{" hot" if m.now_relative >= 1 else ""}">{m.now_relative:.2f}</b>'
+        f'<span>times the alert line at hour {m.hour}</span></div>{score_chart(m)}{score_chart(m, narrow=True)}</section>'
+    )
+
+
+def happened_tile(m):
+    """What really happened. Filled in only when the replay reaches it."""
+    if m.revealed and not m.missed:
+        head = "Alert at the onset hour" if m.warned == 0 else f"{plural(m.warned, 'hour')} of warning"
+        body = (
+            "A timely catch. The first alert came in the 12 hours before onset." if m.warned <= 12
+            else "Alerted very early. More than 12 hours before onset is counted separately from a timely catch."
+        )
+    elif m.revealed:
+        head, body = "Missed", f"Sepsis onset was at hour {m.onset}. The score never crossed the alert line in time. This is a miss."
+    elif not m.sepsis and m.ended:
+        head = "No sepsis, no alert" if m.first_alert is None else "False alarm"
+        body = "End of the record. This patient never developed sepsis" + (
+            ", and there was no alert." if m.first_alert is None else ". This alert was a false alarm."
+        )
+    elif m.sepsis and m.ended:
+        head, body = "Record ended", "The record ends before the onset hour."
+    else:
+        head, body = "Not revealed yet", "The outcome shows only when the replay reaches it. The model never sees it."
+
+    shut = head == "Not revealed yet"
+    return (
+        f'<section class="tile happened {"shut" if shut else "open"}"><h3>What happened</h3>'
+        f'<div class="head display">{head}</div><p>{body}</p>{stay_strip(m)}{stay_strip(m, narrow=True)}</section>'
+    )
+
+
+def stay_strip(m, narrow=False):
+    """One line for the whole stay: how far the replay has got, and where the alert and the onset fell."""
+    width, base = 330 if narrow else 600, 44
+    x = lambda h: 10 + (h - m.first) / m.span * (width - 20)
+    parts = [
+        f'<line x1="10" x2="{width - 10}" y1="{base}" y2="{base}" class="grid" style="stroke-width:2"/>',
+        f'<line x1="10" x2="{x(m.hour):.1f}" y1="{base}" y2="{base}" stroke="{CHALK}" stroke-width="2"/>',
+    ]
+    if m.revealed:
+        start = max(x(m.onset - 12), 10)
+        parts.append(f'<rect x="{start:.1f}" y="{base - 12}" width="{x(m.onset) - start:.1f}" height="24" rx="3" class="window"/>')
+    marks = sorted((h, word, style) for h, word, style, _ in marker_list(m) if style != "mk-label")
+    for i, (h, word, style) in enumerate(marks):   # the earlier word sits above the line, the later one below
+        at, anchor = x(h), "end" if x(h) > width / 2 else "start"
+        parts.append(f'<line x1="{at:.1f}" x2="{at:.1f}" y1="{base - 14}" y2="{base + 14}" class="{style}" style="stroke-width:2.5"/>')
+        parts.append(
+            f'<text x="{at + (-6 if anchor == "end" else 6):.1f}" y="{base - 20 if i == 0 else base + 31}" class="{style}-t" '
+            f'font-size="13" text-anchor="{anchor}">{word}, hour {h}</text>'
+        )
+    return (
+        f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} 84" role="img" '
+        f'aria-label="Timeline of the stay up to hour {m.hour}">{"".join(parts)}</svg>'
+    )
+
+
+def proof_tile():
+    """The hospital B numbers, from the result files. The timely number leads."""
+    proof = SCOREBOARD["proof"]
+    cells = "".join(
+        f'<div class="{"first" if i == 0 else ""}"><b class="display">{c["big"]}</b><span>{c["what"]}</span></div>'
+        for i, c in enumerate(proof["numbers"])
+    )
+    return f'<section class="tile proof"><h3>{proof["title"]}</h3><p class="lede">{proof["lede"]}</p><div class="nums">{cells}</div></section>'
+
+
+def inputs_tile(m):
+    cells = []
     for column, name, unit, kind in SEEN_TABLE:
-        value, age = now[f"last_{column}"], now[f"hours_since_{column}"]
+        value, age = m.now[f"last_{column}"], m.now[f"hours_since_{column}"]
         if pd.isna(value):
-            lines.append(f'<tr><td>{name}</td><td class="num"><span class="chip none">not measured</span></td><td></td></tr>')
+            cells.append(f'<div class="cell"><span>{name}</span><b class="none">not measured</b></div>')
             continue
         when = "this hour" if age == 0 else f"{plural(age, 'hour')} ago"
-        stale = '<span class="chip stale">stale</span>' if age > STALE_AFTER[kind] else ""
-        lines.append(f'<tr><td>{name}</td><td class="num">{value:g} {unit}</td><td>measured {when}{stale}</td></tr>')
+        stale = " <em>stale</em>" if age > STALE_AFTER[kind] else ""
+        cells.append(f'<div class="cell"><span>{name}</span><b>{value:g} <small>{unit}</small></b><span>measured {when}{stale}</span></div>')
     return (
-        '<table class="plain"><thead><tr><th>Input</th><th class="num">Latest value</th><th>How old</th></tr></thead>'
-        f'<tbody>{"".join(lines)}</tbody></table>'
+        f'<section class="tile inputs"><h3>What the model could see at hour {m.hour}</h3><div class="cells">{"".join(cells)}</div>'
         '<p class="caption">"Stale" means a vital sign older than 4 hours or a lab older than 24 hours. '
         "That cutoff is my own choice for this display. Units are as listed in the dataset's description. "
-        "The model also sees trends, time in the unit, and how long ago each value was measured.</p>"
+        "The model also sees trends, time in the unit, and how long ago each value was measured.</p></section>"
     )
+
+
+LABELS = {case["pid"]: case["label"] for case in CASES["cases"]}
+SITE = CASES["site"][0].lower() + CASES["site"][1:]   # "hospital B", for the middle of a sentence
 
 
 def show(pid, hour):
-    """Everything on the Replay tab for one patient at one hour."""
+    """Every tile on the Replay tab for one patient at one hour."""
     if not pid:
-        empty = '<div class="card empty"><div class="word">Choose a saved patient above to start the replay.</div></div>'
-        return None, empty, ""
+        return (
+            '<div class="grid12"><section class="tile wide12"><div class="head display">Choose a saved patient above to start the replay.</div>'
+            f"</section>{proof_tile()}</div>"
+        )
     first, last = hours_of(pid)
-    hour = int(min(max(hour, first), last))
-    return make_chart(pid, hour), status_card(pid, hour), seen_table(pid, hour)
-
-
-# ---------------------------------------------------------------- static blocks
-def proof_strip():
-    s = SCOREBOARD["proof"]
-    cells = "".join(
-        f'<div class="cell"><div class="big">{c["big"]}</div><div class="what">{c["what"]}</div>'
-        f'<div class="where">{c["where"]}</div></div>'
-        for c in s
+    m = moment(pid, int(min(max(hour, first), last)))
+    vitals = "".join(vital_tile(m, *tile) for tile in VITAL_TILES)
+    return (
+        f'<div class="grid12">{state_tile(m, LABELS[pid])}{vitals}{score_tile(m)}{happened_tile(m)}{proof_tile()}{inputs_tile(m)}</div>'
+        f'<p class="source">Source: PhysioNet / Computing in Cardiology Challenge 2019, {SITE}, one public de-identified record. '
+        "In the four small charts a dot is a real measurement, the line carries the last one forward, and the gray strips are where the "
+        "NEWS2 bedside chart (Royal College of Physicians, 2017, made for general wards) gives 1, 2 or 3 points. The model does not use NEWS2. "
+        "Retrospective replay of a saved record, not a live monitor. Nothing you do here is stored. "
+        "This project is a prototype and is not medical advice.</p>"
     )
-    return f'<div class="proof">{cells}</div>'
 
 
-def html_table(table):
+# ---------------------------------------------------------------- the "Does it travel?" tab
+def html_table(table, many=False):
     head = "".join(
         f'<th class="{"num" if i else ""}">{h}</th>' for i, h in enumerate(table["columns"])
     )
@@ -356,31 +625,56 @@ def html_table(table):
         )
         body += f"<tr>{cells}</tr>"
     caption = f'<p class="caption">{table["caption"]}</p>' if table.get("caption") else ""
-    return f'<table class="plain"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>{caption}'
+    return (
+        f'<div class="scroll"><table class="plain{" many" if many else ""}"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>{caption}'
+    )
 
 
 def warning_chart():
+    """Hours of warning, as plain bars that fill the tile at any width."""
     data = SCOREBOARD.get("warning_chart")
     if not data:
-        return None
-    fig = go.Figure(go.Bar(
-        x=data["labels"], y=data["counts"], text=data["counts"], textposition="outside",
-        marker_color=ACCENT, hovertemplate="%{x}: %{y} patients<extra></extra>",
-    ))
-    fig.update_layout(
-        title=dict(text=data["title"], font=dict(size=18)), height=400, paper_bgcolor=PAGE,
-        plot_bgcolor="#FFFFFF", margin=dict(l=48, r=16, t=88, b=64),
-        font=dict(family="Inter, system-ui, sans-serif", size=14, color=TEXT),
-        xaxis_title="Hours of warning before onset", yaxis_title="Patients",
+        return ""
+    tallest = max(data["counts"])
+    timely = data.get("timely", [False] * len(data["counts"]))
+    bars = "".join(
+        f'<div class="bar{" timely" if inside else ""}"><b class="display">{count}</b><i style="height:{100 * count / tallest * 0.86:.1f}%"></i></div>'
+        for count, inside in zip(data["counts"], timely)
     )
-    fig.update_yaxes(gridcolor="#ECEEF1", range=[0, max(data["counts"]) * 1.15])   # headroom for the number on the tallest bar
-    return fig
+    labels = "".join(f"<span>{label}</span>" for label in data["labels"])
+    spoken = ". ".join(f"{label} hours: {count} patients" for label, count in zip(data["labels"], data["counts"]))
+    return (
+        f'<section class="tile wide12"><h3>Hours of warning before onset</h3><div class="charttitle display">{data["title"]}</div>'
+        f'<div class="bars" role="img" aria-label="{spoken}">{bars}</div><div class="barlabels" aria-hidden="true">{labels}</div>'
+        f'<div class="barkey"><span><i style="background:{CHALK}"></i>inside the 12 hours before onset (timely)</span>'
+        '<span><i style="background:#56616F"></i>more than 12 hours early</span><span>The number on each bar is patients. '
+        "The labels are hours of warning.</span></div>"
+        f'<p class="caption">{data["source"]}</p></section>'
+    )
+
+
+def travel_tab():
+    tiles = [
+        f'<section class="tile wide12"><div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
+        f'<section class="tile wide12"><h3>The full model at both hospitals</h3>{html_table(SCOREBOARD["two_hospitals"])}</section>',
+        f'<section class="tile wide12"><h3>All planned models and both comparators</h3>{html_table(SCOREBOARD["models"], many=True)}</section>',
+    ]
+    if SCOREBOARD.get("travel_attempts"):
+        tiles.append(
+            f'<section class="tile wide12"><h3>Attempts to make it travel better</h3>{html_table(SCOREBOARD["travel_attempts"], many=True)}</section>'
+        )
+    tiles.append(warning_chart())
+    tiles.append(f'<section class="tile wide12"><h3>Prediction against result</h3><div class="box">{SCOREBOARD["prediction_box"]}</div></section>')
+    return f'<div class="grid12">{"".join(tiles)}</div>'
 
 
 # ---------------------------------------------------------------- the page
-with gr.Blocks(css=CSS, js=FORCE_LIGHT, analytics_enabled=False, title="Sepsis Early Warning: does it travel?") as demo:
+START = CASES["cases"][0]["pid"]            # the page opens on the first saved patient, at its first hour
+START_FIRST, START_LAST = hours_of(START)
+
+with gr.Blocks(css=CSS, js=FORCE_DARK, theme=gr.themes.Base(), analytics_enabled=False, title="Sepsis Early Warning: does it travel?") as demo:
     gr.HTML(
-        '<div class="topline"><span class="name">Sepsis Early Warning</span>'
+        '<div class="topline"><span class="name display">Sepsis Early Warning</span>'
         '<span class="tag">Research prototype. Not medical advice.</span></div>'
     )
     if CASES["source"] != "B":
@@ -388,46 +682,38 @@ with gr.Blocks(css=CSS, js=FORCE_LIGHT, analytics_enabled=False, title="Sepsis E
 
     with gr.Tabs():
         with gr.Tab("Replay"):
-            gr.HTML(
-                '<div class="promise">An early warning for sepsis, trained at one hospital and tested at another. '
-                "Replay a real, de-identified patient hour by hour and see when it would have alerted.</div>"
-            )
-            gr.HTML(proof_strip())
-
-            current = gr.State("")
-            gr.HTML('<div class="caption" style="font-size:16px;color:#111418;font-weight:500;">Saved patients</div>')
-            with gr.Row():
-                pills = [gr.Button(case["label"], elem_classes="pill") for case in CASES["cases"]]
-            rules = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
-            gr.HTML(f'<p class="caption">Saved from {CASES["site"]}. Chosen by rule, not by eye: {rules}.</p>')
-
-            with gr.Row():
-                hour = gr.Slider(1, 48, value=1, step=1, label="Hour in the unit", scale=4, interactive=True)
-                play = gr.Button("Play", variant="primary", elem_classes="go", scale=1)
-                step = gr.Button("Step one hour", elem_classes="go", scale=1)
+            current = gr.State(START)
+            with gr.Column(elem_classes="transport"):
+                with gr.Row(elem_classes="buttons"):
+                    pills = [
+                        gr.Button(
+                            case["label"], variant="primary" if case["pid"] == START else "secondary",
+                            elem_classes=["pill", PILL_SHAPE.get(case["outcome"], "alert")], scale=0, min_width=0,
+                        )
+                        for case in CASES["cases"]
+                    ]
+                    gr.HTML("", elem_classes="spacer")
+                    play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
+                    step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
+                hour = gr.Slider(START_FIRST, START_LAST, value=START_FIRST, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
+                rules = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
+                gr.HTML(f'<p class="caption">Four saved patients from {SITE}. Chosen by rule, not by eye: {rules}.</p>')
             timer = gr.Timer(0.7, active=False)
 
-            status = gr.HTML(show("", 1)[1])
-            chart = gr.Plot(show_label=False, elem_classes="chart")
-            gr.HTML('<div class="caption" style="font-size:16px;color:#111418;font-weight:500;margin-top:16px;">What the model could see at this hour</div>')
-            seen_html = gr.HTML("")
-            gr.HTML(
-                '<p class="caption">Retrospective replay of public, de-identified records. Nothing you do here is stored. '
-                "This project is a prototype and is not medical advice.</p>"
-            )
+            board = gr.HTML(show(START, START_FIRST))
 
             def choose(pid):
                 first, last = hours_of(pid)
-                fig, card, table = show(pid, first)
-                return pid, gr.Slider(minimum=first, maximum=last, value=first), fig, card, table, gr.Timer(active=False), "Play"
+                chosen = [gr.Button(variant="primary" if case["pid"] == pid else "secondary") for case in CASES["cases"]]
+                return [pid, gr.Slider(minimum=first, maximum=last, value=first), show(pid, first), gr.Timer(active=False), "Play", *chosen]
 
             for button, case in zip(pills, CASES["cases"]):
                 button.click(
                     lambda pid=case["pid"]: choose(pid), None,
-                    [current, hour, chart, status, seen_html, timer, play],
+                    [current, hour, board, timer, play, *pills], show_progress="hidden",
                 )
 
-            hour.change(show, [current, hour], [chart, status, seen_html], show_progress="hidden")
+            hour.change(show, [current, hour], board, show_progress="hidden")
 
             def advance(pid, now):
                 if not pid:
@@ -438,7 +724,7 @@ with gr.Blocks(css=CSS, js=FORCE_LIGHT, analytics_enabled=False, title="Sepsis E
                     return nxt, gr.Timer(active=False), "Play"
                 return nxt, gr.Timer(), gr.Button()
 
-            step.click(lambda pid, now: advance(pid, now)[0], [current, hour], hour)
+            step.click(lambda pid, now: advance(pid, now)[0], [current, hour], hour, show_progress="hidden")
             timer.tick(advance, [current, hour], [hour, timer, play], show_progress="hidden")
 
             def toggle(pid, label, now):
@@ -450,25 +736,14 @@ with gr.Blocks(css=CSS, js=FORCE_LIGHT, analytics_enabled=False, title="Sepsis E
                     return gr.Timer(active=True), "Pause", restart
                 return gr.Timer(active=False), "Play", now
 
-            play.click(toggle, [current, play, hour], [timer, play, hour])
+            play.click(toggle, [current, play, hour], [timer, play, hour], show_progress="hidden")
 
         with gr.Tab("Does it travel?"):
-            gr.HTML(f'<div class="promise">{SCOREBOARD["headline"]}</div>')
-            gr.HTML(f'<div class="finding">{SCOREBOARD["finding"]}</div>')
-            gr.HTML(html_table(SCOREBOARD["two_hospitals"]))
-            gr.HTML('<div class="promise" style="font-size:18px;">All planned models and both comparators</div>')
-            gr.HTML(html_table(SCOREBOARD["models"]))
-            if SCOREBOARD.get("travel_attempts"):
-                gr.HTML('<div class="promise" style="font-size:18px;">Attempts to make it travel better</div>')
-                gr.HTML(html_table(SCOREBOARD["travel_attempts"]))
-            figure = warning_chart()
-            if figure is not None:
-                gr.Plot(figure, show_label=False)
-                gr.HTML(f'<p class="caption">{SCOREBOARD["warning_chart"]["source"]}</p>')
-            gr.HTML(f'<div class="box">{SCOREBOARD["prediction_box"]}</div>')
+            gr.HTML(travel_tab())
 
         with gr.Tab("Limits and model card"):
-            gr.Markdown(LIMITS_TEXT, elem_classes="narrow")
+            with gr.Column(elem_classes="limits"):
+                gr.Markdown(LIMITS_TEXT)
 
 if __name__ == "__main__":
     demo.launch(show_api=False)

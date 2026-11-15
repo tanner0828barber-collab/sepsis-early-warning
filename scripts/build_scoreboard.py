@@ -162,21 +162,19 @@ else:
         ),
     }
 
-# the proof strip: three numbers, each with its denominator and its site
+# the proof tile: the timely number leads, then alerted by onset, missed, and false alarms
 in_time = main["caught"] + main["very_early"]
-out["proof"] = [
-    {"big": f'{n(main["caught"])} of {n(main["sepsis_patients"])}',
-     "what": "sepsis patients got their first alert in the 12 hours before onset",
-     "where": f'{site}, {main["patients"]:,} patients it never trained on. {n(main["missed"])} were missed'},
-    {"big": f'{n(in_time)} of {n(main["sepsis_patients"])}',
-     "what": "sepsis patients alerted at or before onset, however early",
-     "where": f'{n(main["caught"])} in the 12 hour window plus {n(main["very_early"])} more than 12 hours early'},
-    {"big": pct(main["false_alarm_share"]),
-     "what": "of patients who never developed sepsis got an alert",
-     "where": (f'{site}: {n(main["false_alarms"])} of {n(main["non_sepsis_patients"])} patients. '
-               f'{main["false_alarms"] / main["caught"]:.1f} false alarms per timely catch. '
-               f'{main["alerts_per_1000_patient_days"]:.0f} alerts per 1,000 patient-days')},
-]
+out["proof"] = {
+    "title": f'{site}, {main["patients"]:,} patients it never trained on',
+    "lede": out["headline"],
+    "numbers": [
+        {"big": f'{n(main["caught"])} of {n(main["sepsis_patients"])}',
+         "what": "sepsis patients got a timely alert, in the 12 hours before onset"},
+        {"big": n(in_time), "what": "alerted by onset, however early"},
+        {"big": n(main["missed"]), "what": "missed"},
+        {"big": pct(main["false_alarm_share"]), "what": "false alarms, among patients who never developed sepsis"},
+    ],
+}
 
 # hours of warning, for patients alerted by onset
 patients_file = RESULTS / ("b_patients_M3.csv" if b else "a_dev_patients_M3.csv")
@@ -187,7 +185,8 @@ labels = ["0 to 2", "3 to 5", "6 to 8", "9 to 12", "13 to 24", "25 to 48", "over
 out["warning_chart"] = {
     "labels": labels,
     "counts": [int(((warned >= lo) & (warned <= hi)).sum()) for lo, hi in bins],
-    "title": f"Most alerts came more than 12 hours early:<br>{n((warned > 12).sum())} of the {n(len(warned))} patients alerted by onset",
+    "timely": [hi <= 12 for lo, hi in bins],   # which bars sit inside the 12 hour window
+    "title": f"Most alerts came more than 12 hours early: {n((warned > 12).sum())} of the {n(len(warned))} patients alerted by onset",
     "source": (
         f"Source: {site}, {n(len(warned))} sepsis patients with an alert at or before onset. "
         "Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
