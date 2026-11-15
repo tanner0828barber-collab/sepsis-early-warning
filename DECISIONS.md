@@ -214,6 +214,12 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Paired differences, resampling the same patients for both models: both-hospitals against hospital A only on hospital A patients; hospital B only against both-hospitals on hospital B patients; hospital B's burn-in alert line against hospital A's unchanged cutoff on the 18,000.
   - To pair the hospital B only model, its script is rerun unchanged except that it now also saves which hours it alerted on. It is seeded, so it must reproduce 0.394 and 221 missed exactly. If it does not, that is reported.
   - How a range will be read: if a difference's 95% range includes zero, the two models are not told apart by this data, and the write-up may not call one better.
+- Sat 11/14, 5:43 PM. PLAN, written before running: train on a utility-shaped target (script scripts/v2_utility_target.py). After-the-fact, hospital A only. This is the last idea aimed at the model's ranking that has outside evidence behind it: the literature review says the challenge winner trained on it (Claude has not opened that paper).
+  - What changes: today the model learns a yes or no label. Here it learns a number for every hour: how much the official score gains if the model alerts at that hour compared with staying silent. That number is minus 0.05 for any hour of a patient who never develops sepsis and for hours more than 12 hours before onset, climbs from 0 to 1 across the 12 to 6 hours before onset, and climbs on to 2 by 3 hours after onset. It is worked out from the organizers' own scoring rules, and the script checks it against their scoring function before training.
+  - How it differs from the two target ideas that already failed: those kept a yes or no label and only moved or re-counted which hours were yes. This one is a graded number learned by regression, so an hour near onset is worth more than an hour 11 hours before it.
+  - Same 100 inputs, same settings, 200 trees, a regressor in place of the classifier. Same nested cross-validation, folds and 25% cap as the hospital A only baseline (0.399, 72.7% alerted by onset, 391 missed).
+  - Keep rule: 74.2% or more alerted by onset and utility not below 0.389.
+  - Claude's guess, logged in advance: utility moves by 0.00 to plus 0.01, alerted by onset stays within 1.5 points, and the keep rule is not met. About a one in five chance it passes.
 
 ## Why no new outside data
 
