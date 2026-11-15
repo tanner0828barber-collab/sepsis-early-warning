@@ -1,4 +1,4 @@
-# Sepsis Early Warning: moved to a second hospital, it gave a timely alert to only 109 of 1,142 sepsis patients
+# Sepsis Early Warning: moved to a second hospital, only 109 of 1,142 sepsis patients got their first alert in the 12 hours before onset
 
 **Track:** Health. **Team:** Tanner Barber, solo. This project is a prototype and is not medical advice.
 
@@ -19,13 +19,13 @@ Our own idea. My user is an intensive care nurse, my data is public records from
 **Model:** never alert (utility 0 by definition), a modified SIRS bedside rule, a model that sees only hours in the unit, then gradient boosting on 100 inputs. Each step shows what the next one adds.
 
 ## Results
-At hospital B, of 1,142 sepsis patients, **109 (9.5%) got their first alert in the 12 hours before onset**, 377 were alerted earlier than that (very early), and **656 (57%) were missed**. Of 18,858 patients who never developed sepsis, **1,358 (7.2%) got a false alarm**. That is 12.5 false alarms per timely catch, and 115 alerts per 1,000 patient-days.
+At hospital B, of 1,142 sepsis patients, **109 (9.5%) got their first alert in the 12 hours before onset**, 377 were alerted earlier than that (very early), and **656 (57%) were missed**. Of 18,858 patients who never developed sepsis, **1,358 (7.2%) got a false alarm**. That is 12.5 false alarms per timely catch, and 115 alerts per 1,000 patient-days. Counting alerts already on in those 12 hours too (added after the frozen run): 452.
 
-| Method | Utility, A dev | Utility, B (95% range) | Timely at B | Missed at B | False alarms at B |
-|---|---|---|---|---|---|
-| Modified SIRS rule | 0.090 | -0.014 (-0.051 to 0.023) | 306 | 176 | 12,630 (67.0%) |
-| Hours in the unit only | 0.312 | 0.242 (0.217 to 0.268) | 79 | 717 | 2,581 (13.7%) |
-| Full model | 0.368 | 0.238 (0.214 to 0.262) | 109 | 656 | 1,358 (7.2%) |
+| Method | Utility, A dev | Utility, B (95% range) | Timely at B | Alert on in window, B | Missed at B | False alarms at B |
+|---|---|---|---|---|---|---|
+| Modified SIRS rule | 0.090 | -0.014 (-0.051 to 0.023) | 306 | 885 | 176 | 12,630 (67.0%) |
+| Hours in the unit only | 0.312 | 0.242 (0.217 to 0.268) | 79 | 425 | 717 | 2,581 (13.7%) |
+| Full model | 0.368 | 0.238 (0.214 to 0.262) | 109 | 452 | 656 | 1,358 (7.2%) |
 
 Utility is the challenge's official score (1 is perfect). **At hospital B the full model did not beat the model that only knows the hour.**
 

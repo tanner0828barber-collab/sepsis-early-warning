@@ -257,6 +257,21 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Reported for every planned model and the modified SIRS rule, at hospital A dev and hospital B, so the full model's count can be read next to the time-only model's. The script first checks that it reproduces the frozen timely, very early and missed counts, and stops if it does not.
   - Honest note: this is not a blind plan. The measure was defined after hospital B was scored, and the full model's hospital B count (452 of 1,142) was already seen at about 6:10 PM, in a read-only check by a separate Claude Code chat that Tanner asked to evaluate the project. So it is after-the-fact and is labeled that way wherever it appears. It answers the open "timely coverage" question.
   - Claude's guess for the numbers not yet seen, logged in advance: the time-only model's count equals its alerted by onset count at hospital B (425), because its alert almost never switches off once it is on. The modified SIRS rule lands above 800 of 1,142.
+- Sat 11/14, 6:32 PM. RESULT of the alert-on-in-the-window count (results/after_the_fact_alert_on_in_window.csv). After-the-fact reporting, no model change. Before counting, the script reproduced the frozen timely, very early and missed counts for every method at both sites.
+
+  | Hospital B, 1,142 sepsis patients | Timely (first alert in the 12 hours before onset) | Alert on in those 12 hours (95% range) | Very early, and off through the whole window |
+  |---|---|---|---|
+  | Modified SIRS rule | 306 | 885 (77.5%, 75.0 to 80.1) | 81 |
+  | T0: hours in the unit only | 79 | 425 (37.2%, 34.5 to 39.9) | 0 |
+  | M1: body signals and trends | 103 | 248 (21.7%, 19.4 to 24.0) | 69 |
+  | M2: M1 plus time | 111 | 464 (40.6%, 37.7 to 43.3) | 38 |
+  | M3: the full model | 109 | 452 (39.6%, 36.6 to 42.3) | 34 |
+
+  - Hospital A dev (the calibration set), same count: the full model 206 of 358 (57.5%, 52.8 to 62.8), the time-only model 145 of 358 (40.5%, 35.5 to 45.5), the modified SIRS rule 280 of 358 (78.2%).
+  - What it means: both counts are true and they answer different questions. 109 of 1,142 got a NEW alert in the 12 hours before onset. 452 of 1,142 had an alert showing at some hour in those 12 hours, because 343 of the 377 "very early" patients were still alerting or alerting again. For those 343 the alert had first fired more than 12 hours earlier, so it was not news at the bedside. The timely number stays 109. The new count is reported next to it and never in place of it.
+  - It does not rescue the model. By this count the time-only model has 425 at hospital B against the full model's 452, and the two ranges overlap (no paired test was run). At hospital A dev the gap is wide, 206 against 145. That is the same story the utility score tells: ahead of the clock at home, about level with it at hospital B.
+  - Guess against result: the time-only model guessed at 425 (right). The modified SIRS rule guessed above 800 (right: 885).
+  - Where it is reported: the write-up and the README. Not yet in the app or the notebook.
 
 ## Why no new outside data
 

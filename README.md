@@ -18,6 +18,7 @@ The full model, with its alert line set on hospital A so that 15% of patients wh
 |---|---|---|
 | Timely catches: first alert in the 12 hours before onset | 60 of 358 (17%) | **109 of 1,142 (9.5%)** |
 | Alerted very early: more than 12 hours before onset | 162 of 358 | 377 of 1,142 |
+| Alert on at some hour in the 12 hours before onset (counted after the frozen run, after-the-fact) | 206 of 358 (58%) | 452 of 1,142 (39.6%) |
 | Sepsis patients missed | 136 of 358 | 656 of 1,142 (57%) |
 | False alarms | 556 of 3,710 (15.0%) | 1,358 of 18,858 (7.2%) |
 | False alarms per timely catch | 9.3 | 12.5 |
@@ -27,6 +28,7 @@ The full model, with its alert line set on hospital A so that 15% of patients wh
 The alert line was set on hospital A dev, so its 15.0% false alarm share is true by construction. "Alerted at or before onset" (222 of 358 at A dev, 486 of 1,142 at B) adds the timely and very early rows together.
 
 - **Timely catches were rare.** At hospital B, 109 of 1,142 sepsis patients got their first alert in the 12 hours before onset.
+- **A second way to count, added after the frozen run.** "Timely" counts first alerts only. 452 of 1,142 had the alert on at some hour in those 12 hours, because 343 of the 377 "very early" patients were still alerting. For them the alert was not new. By the same count the time-only model has 425, so this does not change the finding below. Numbers: `results/after_the_fact_alert_on_in_window.csv`.
 - **It travels only partly.** Utility fell by about a third.
 - **It got quieter, not noisier.** Hospital B measures lab values less often and its blood pressures read higher, so the model scored everyone lower there.
 - **Time in the unit explains a lot.** A model that sees only hours in the unit scored 0.242 at hospital B, about the same as the full model.
