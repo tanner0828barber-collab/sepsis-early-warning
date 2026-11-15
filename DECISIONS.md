@@ -275,13 +275,19 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
 
 ## The unit board (a second screen in the app, no model change)
 
-- Sat 11/14, 6:52 PM. PLAN, written before any patient was picked: a "Unit board" tab in the app (code in app/unit_board.py, patients picked by scripts/build_unit_board.py). Why: my user is a nurse deciding which patient to look at first, and the Replay shows one patient at a time. The board shows 12 hospital B patients at the same hour of their stay, ranked by the frozen model's score, highest first.
+- Sat 11/14, 6:48 PM. PLAN, written before any patient was picked: a "Unit board" tab in the app (code in app/unit_board.py, patients picked by scripts/build_unit_board.py). Why: my user is a nurse deciding which patient to look at first, and the Replay shows one patient at a time. The board shows 12 hospital B patients at the same hour of their stay, ranked by the frozen model's score, highest first.
   - No model, threshold or result changes. It uses the same frozen model and the same frozen alert line as the Replay. It is a display, not a result, and no number from it is reported as a result.
   - Patients are picked by rule and not by eye: one seeded random draw (seed 2026) from all 20,000 hospital B patients, 9 who never develop sepsis and 3 who do. The draw never reads the model's scores or outcomes, so nobody chose patients the model does well or badly on. Whatever the draw gives stays, including if the model misses all three.
   - Disclosed on the screen: 3 of 12 is far more sepsis than the real share at hospital B (1,142 of 20,000, about 1 in 18). Sepsis patients were added on purpose so the board has something to find. The 12 patients were not in the unit together: the board lines their records up by hour in the unit. Bed numbers are made up and come from the same seeded shuffle, so a bed number says nothing about the patient.
   - What happened to each patient stays hidden until the board's hour reaches it, the same rule as the Replay.
   - Words on the screen: "Over the line" is a score at or above the frozen alert line, "Near the line" is half the line or more, "Below the line" is anything lower. Half is a display choice, not a clinical standard and not a second alert line.
   - Choices Claude made to keep moving, which Tanner can overrule: 12 beds, the 9 and 3 mix, the "near" level at half the line, the board opening at hour 12, and the board being the first tab.
+- Sat 11/14, 6:55 PM. RESULT: the unit board is built and is the first tab of the app. The draw ran once and was kept as drawn. No model, threshold or reported number changed.
+  - Who was drawn: 12 hospital B patients. The 3 who develop sepsis sit in beds 5, 6 and 9.
+  - What the frozen model did with them, seen only after the draw. Bed 6: first alert at hour 12, 31 hours before onset at hour 43, so very early. At the onset hour its score was back under the line (0.45 of it), though it was ranked 1st of 7. Bed 5: missed. At its onset hour, 48, it was ranked 3rd of 5 with a score of 0.14 of the line. Bed 9: first alert 282 hours before an onset at hour 337, very early (the record ends at hour 336). Of the 9 who never develop sepsis, 1 got a false alarm (bed 8, at hour 58).
+  - So the board shows no timely catch: two very early alerts, one miss, one false alarm. That is what the draw gave, and it matches the hospital B result (9.5% timely, 33% very early, 57% missed). It stays. Twelve patients measure nothing, so none of this is reported as a result.
+  - Also changed on the Replay: the score tile now leads with a plain word ("Below the line," "Near the line," "Over the line"). The exact number and "the model score divided by the frozen alert cutoff, not a probability" stay next to it. Any bed on the board can be opened in the Replay at the hour the board is showing.
+  - Checks: 23 tests pass, 6 of them new for the board. One cuts each record off at an hour, scores it again, and confirms the board shows the same number, so the board cannot see the future. The app was checked by hand at desktop and phone width.
 
 ## Why no new outside data
 

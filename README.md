@@ -62,7 +62,7 @@ Hospital B is a site-held-out evaluation set, not a blinded test. The full discl
 - [DECISIONS.md](DECISIONS.md): every choice with its time and reason, the prediction committed before any model was trained, and how it compared with the result.
 - [DEFINITIONS.md](DEFINITIONS.md): what "caught," "very early," "missed," "false alarm," and "onset" mean here.
 - [SPEC.md](SPEC.md): the one page plan written before any code.
-- `src/` holds the working code, `tests/` the checks (including that no input can see the future), `results/` every reported number, and `app/` the replay tool.
+- `src/` holds the working code, `tests/` the checks (including that no input can see the future), `results/` every reported number, and `app/` the tool: a unit board that ranks 12 saved hospital B patients by the model's score at each hour, and a replay of one patient's stay.
 
 ## Run it
 

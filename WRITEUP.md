@@ -6,7 +6,7 @@
 About 1.7 million adults in the U.S. develop sepsis each year, and at least 350,000 die in the hospital or are discharged to hospice ([CDC](https://www.cdc.gov/sepsis/about/)). A nurse cannot study every chart every hour. Warning models exist, but each is built at one hospital. Does one still work when it moves?
 
 ## What we built
-I built a model that reads an intensive care patient's record hour by hour (7 vital signs, 26 labs, age, sex, hours in the unit) and alerts when its score crosses a fixed line. **The user is an intensive care nurse deciding which patient to look at first.** A replay tool plays back a real, de-identified stay and shows what the model saw each hour and when it alerted.
+I built a model that reads an intensive care patient's record hour by hour (7 vital signs, 26 labs, age, sex, hours in the unit) and alerts when its score crosses a fixed line. **The user is an intensive care nurse deciding which patient to look at first.** A unit board ranks 12 saved patients by score each hour, and a replay shows one real, de-identified stay: what the model saw each hour and when it alerted.
 Try it: `app/app.py`, steps in the [README](https://github.com/tanner0828barber-collab/sepsis-early-warning#run-it). Notebook: [sepsis_early_warning.ipynb](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/sepsis_early_warning.ipynb). Code: https://github.com/tanner0828barber-collab/sepsis-early-warning
 
 ## What we added

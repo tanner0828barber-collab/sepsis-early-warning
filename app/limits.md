@@ -38,6 +38,15 @@ Because the label is built partly from when staff ordered antibiotics and cultur
 - **The gray strips in the four small charts** are the scoring ranges of the NEWS2 bedside chart (Royal College of Physicians, 2017), checked against the college's own Chart 1 on November 14, 2026. NEWS2 was made for adults on general wards, not for intensive care. The strips are only there to help read the charts. The model does not use NEWS2, and I do not compute a NEWS2 score.
 - **The four vital signs with tiles** were picked because NEWS2 has ranges for them. The last tile lists 15 of the 33 measured values the model reads (7 vital signs and 26 labs). The other 18 labs, age and sex are not shown on screen.
 
+## What the Unit board shows
+
+- **A made-up unit.** Twelve real hospital B records, lined up by hour in the unit and ranked by the model's score, highest first. The patients were not in the unit together, and the bed numbers are made up.
+- **Picked by rule, not by eye.** One seeded random draw from all 20,000 hospital B patients: 9 who never develop sepsis and 3 who do. The draw never reads the model's scores, so nobody chose patients the model does well or badly on.
+- **Sepsis is over-represented on purpose.** 3 of 12 on the board, against 1,142 of 20,000 at the hospital (about 1 in 18). The board is there to show how the ranking reads, not how often sepsis happens.
+- **It is a display, not a result.** Twelve patients cannot measure anything. Every reported number comes from all 20,000.
+- **Three words for the score.** "Over the line" is at or above the frozen alert line. "Near the line" is half the line or more. "Below the line" is anything lower. Half is my own choice for this display. It is not a second alert line and it was not tested.
+- **What happened is hidden until the board reaches it,** the same rule as the Replay.
+
 ## Where the alert line came from
 
 It was set once, on 4,068 hospital A patients the model did not train on, so that at most 15% of patients who never developed sepsis were ever alerted. Then it was frozen and committed before hospital B was opened. It was not moved afterward. Because the line was set on those patients, hospital A dev is the calibration set: its numbers describe the operating point and are not an independent test.

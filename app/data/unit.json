@@ -1,0 +1,58 @@
+{
+  "site": "Hospital B",
+  "rule": "one seeded random draw (seed 2026) from all 20,000 hospital B patients: 9 who never develop sepsis and 3 who do. The draw never reads the model's scores",
+  "seed": 2026,
+  "with_sepsis": 3,
+  "hospital_sepsis_patients": 1142,
+  "hospital_patients": 20000,
+  "beds": [
+    {
+      "bed": 1,
+      "pid": "p109330"
+    },
+    {
+      "bed": 2,
+      "pid": "p107293"
+    },
+    {
+      "bed": 3,
+      "pid": "p117005"
+    },
+    {
+      "bed": 4,
+      "pid": "p101594"
+    },
+    {
+      "bed": 5,
+      "pid": "p106058"
+    },
+    {
+      "bed": 6,
+      "pid": "p113388"
+    },
+    {
+      "bed": 7,
+      "pid": "p100526"
+    },
+    {
+      "bed": 8,
+      "pid": "p112848"
+    },
+    {
+      "bed": 9,
+      "pid": "p101922"
+    },
+    {
+      "bed": 10,
+      "pid": "p112771"
+    },
+    {
+      "bed": 11,
+      "pid": "p107395"
+    },
+    {
+      "bed": 12,
+      "pid": "p103584"
+    }
+  ]
+}
