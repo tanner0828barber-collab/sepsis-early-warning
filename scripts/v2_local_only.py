@@ -91,7 +91,8 @@ candidate = measure("hospital B only model", new_alert)
 
 table = pd.DataFrame([baseline, candidate])
 table.to_csv(ROOT / "results" / "after_the_fact_v2_local_only.csv", index=False)
-pd.DataFrame({"pid": pool.pid, "ICULOS": pool.ICULOS, "SepsisLabel": pool.SepsisLabel, "outer_fold": outer, "score_B_only": scores}).to_parquet(
+pd.DataFrame({"pid": pool.pid, "ICULOS": pool.ICULOS, "SepsisLabel": pool.SepsisLabel, "outer_fold": outer, "score_B_only": scores,
+              "alert_B_only": new_alert, "alert_both": base_alert}).to_parquet(
     ROOT / "data" / "v2_held_out_scores_B_only.parquet")
 show = ["model", "utility", "sepsis_patients", "caught", "very_early", "missed", "alerted_by_onset_share", "false_alarms", "false_alarm_share", "alerts_per_1000_patient_days"]
 with pd.option_context("display.width", 240, "display.max_columns", 20):

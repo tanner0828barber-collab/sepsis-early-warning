@@ -209,6 +209,11 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - The surprise in the curve did not survive the proper test. In the curve, the local-only arm beat the mixed arm on one test set with the cutoff set on the scored patients. Nested, on all of hospital B, the mixed model is level on catches and a little ahead on utility. This is why the cutoff is set on other patients before a result is believed.
   - Read together with the both-hospitals result: hospital B's data did not help hospital A, and hospital A's data helps hospital B a little or not at all. What a hospital mostly needs is its own labeled patients.
   - Guess against result: utility guessed at 0.40 to 0.42 (wrong, lower: 0.394). Guessed it would not meet the keep rule (right).
+- Sat 11/14, 5:41 PM. PLAN, written before running: 95% ranges for the version 2 numbers (script scripts/v2_ranges.py). The outside reviewer asked for uncertainty on the version 2 comparisons. No new model and no new choice: this reads the held-out scores and cutoffs already saved and resamples patients 1,000 times (seed 2026), the same method as the version 1 ranges.
+  - Ranges for the both-hospitals model at the 25% cap: utility, timely share, alerted by onset, and false alarm share, at hospital A, at hospital B, and together.
+  - Paired differences, resampling the same patients for both models: both-hospitals against hospital A only on hospital A patients; hospital B only against both-hospitals on hospital B patients; hospital B's burn-in alert line against hospital A's unchanged cutoff on the 18,000.
+  - To pair the hospital B only model, its script is rerun unchanged except that it now also saves which hours it alerted on. It is seeded, so it must reproduce 0.394 and 221 missed exactly. If it does not, that is reported.
+  - How a range will be read: if a difference's 95% range includes zero, the two models are not told apart by this data, and the write-up may not call one better.
 
 ## Why no new outside data
 
