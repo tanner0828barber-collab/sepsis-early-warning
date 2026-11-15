@@ -26,7 +26,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from features import build_features  # noqa: E402
+from features import LABS, VITALS, build_features  # noqa: E402
 from train import score_rows  # noqa: E402
 
 APP_DATA = Path(__file__).resolve().parent / "data"
@@ -56,8 +56,8 @@ FLARE, VIOLET, TIDE, AMBER = "#FF6B3D", "#D08BFF", "#6FB3E0", "#F6B84B"
 
 # The four vital sign tiles. Names and units are as listed in the dataset's own description on PhysioNet.
 # The shaded strips are the scoring ranges of the NEWS2 bedside chart, checked on 11/14/2026 against
-# Chart 1 of the Royal College of Physicians NEWS2 report (2017). That chart scores whole numbers, so
-# each edge sits half a step between two values. The model does not use these ranges.
+# Chart 1 of the Royal College of Physicians NEWS2 report (2017). That chart scores whole numbers
+# (temperature to one decimal), so each edge sits half a step between two values. The model does not use these ranges.
 # (column, name, unit, color, lowest shown, highest shown, [(from, to, NEWS2 points)])
 VITAL_TILES = [
     ("HR", "Heart rate", "beats per minute", "#62E38A", 30, 150,
@@ -94,10 +94,14 @@ SHAPES = {
     "alert": '<path d="M8 1 15.3 14.5H.7Z" fill="currentColor"/>',
     "missed": '<path d="M8 .8 15.2 8 8 15.2.8 8Z" fill="currentColor"/>',
 }
-PILL_SHAPE = {"caught": "alert", "false alarm": "alert", "missed": "missed"}
+PILL_SHAPE = {"caught": "alert", "false alarm": "alert", "missed": "missed"}   # the shape on each saved patient's button
+
+FONTS = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;600&display=swap">'
+)
 
 CSS = f"""
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=IBM+Plex+Sans:wght@400;600&display=swap');
 body, gradio-app {{ background: {NIGHT} !important; }}
 .gradio-container, .gradio-container * {{ font-family: 'IBM Plex Sans', system-ui, sans-serif !important; }}
 .gradio-container {{
@@ -148,6 +152,7 @@ footer {{ display: none !important; }}
 .gradio-container .transport button.pill::before {{ content: ""; width: 12px; height: 12px; margin-right: 8px; flex: none; }}
 .gradio-container .transport button.pill.alert::before {{ background: {FLARE}; clip-path: polygon(50% 0, 100% 100%, 0 100%); }}
 .gradio-container .transport button.pill.missed::before {{ background: {VIOLET}; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }}
+.gradio-container .transport button.pill.neutral::before {{ width: 8px; height: 8px; border: 2px solid {FOG}; border-radius: 50%; }}
 .gradio-container .transport button.go {{ padding: 0 20px; }}
 .gradio-container .transport button.go.secondary {{ background: transparent; border-color: {RULE}; }}
 .gradio-container .transport .spacer {{ flex: 1 1 0; min-width: 0 !important; }}
@@ -187,12 +192,13 @@ footer {{ display: none !important; }}
 .scorehead b.hot {{ color: {FLARE}; }}
 .scorehead span {{ color: {FOG}; padding-bottom: 5px; }}
 .scoretile svg {{ width: 100%; height: auto; }}
-.tile svg.wide {{ display: block; }} .tile svg.narrow {{ display: none; }}
+.tile svg.wide {{ display: block; }} .tile svg.mid {{ display: none; }} .tile svg.narrow {{ display: none; }}
 svg .lane {{ fill: {LANE}; }} svg .over {{ fill: rgba(255,107,61,.09); }} svg .window {{ fill: rgba(233,238,243,.09); }}
 svg .grid {{ stroke: {RULE}; stroke-width: 1; }} svg .alertline {{ stroke: {FLARE}; stroke-width: 1.6; stroke-dasharray: 7 5; }}
 svg .scoreline {{ fill: none; stroke: {CHALK}; stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }}
+svg .offscale {{ fill: {TILE}; stroke-width: 1.6; }}
 svg .hotdot {{ fill: {FLARE}; stroke: {NIGHT}; stroke-width: 1; }} svg .nowdot {{ fill: {CHALK}; stroke: {NIGHT}; stroke-width: 1.5; }}
-svg .tick {{ fill: {FOG}; font-size: 12.5px; }} svg .alerttext {{ fill: {FLARE}; font-size: 12.5px; }}
+svg .tick {{ fill: {FOG}; font-size: 12.5px; }} svg .alerttext {{ fill: #FF7A50; font-size: 12.5px; }}
 svg .band1 {{ fill: rgba(233,238,243,.05); }} svg .band2 {{ fill: rgba(233,238,243,.10); }} svg .band3 {{ fill: rgba(233,238,243,.16); }}
 svg .halo {{ paint-order: stroke; stroke: {TILE}; stroke-width: 5px; stroke-linejoin: round; font-size: 12.5px; }}
 svg .mk-label {{ stroke: {FOG}; stroke-width: 1.4; stroke-dasharray: 2 4; }} svg .mk-label-t {{ fill: {FOG}; }}
@@ -267,11 +273,12 @@ svg .value {{ fill: {CHALK}; font-size: 13px; font-weight: 600; }} svg .alonedot
 
 @media (max-width: 900px) {{
   .state {{ grid-column: span 12; min-height: 0; padding-top: 52px; }} .state .word {{ font-size: 64px; }} .vital {{ grid-column: span 6; }} .happened, .proof {{ grid-column: span 12; }}
+  .scoretile svg.wide, .after svg.wide {{ display: none; }} .scoretile svg.mid, .after svg.mid {{ display: block; }}
 }}
 /* Gradio adds its own prefix to rules inside a media block, so these must not start with .gradio-container */
 @media (max-width: 600px) {{
   .grid12 {{ gap: 10px; }} .tile {{ border-radius: 18px; padding: 14px; }}
-  .tile svg.wide {{ display: none; }} .tile svg.narrow {{ display: block; }} .state {{ padding-top: 46px; }}
+  .tile svg.wide {{ display: none; }} .tile svg.mid {{ display: none; }} .tile svg.narrow {{ display: block; }} .state {{ padding-top: 46px; }}
   .tabs .tab-nav {{ border-radius: 22px; flex-wrap: wrap; }}
   .state .word {{ font-size: 56px; }}
   .vital .val {{ flex-direction: column; align-items: flex-start; gap: 2px; }} .vital .val b {{ font-size: 40px; }} .vital .val b.none {{ line-height: 40px; }}
@@ -355,20 +362,26 @@ def moment(pid, hour):
     return SimpleNamespace(
         pid=pid, hour=hour, first=first, last=last, span=max(last - first, 1), seen=seen, rows=rows,
         hours=seen.ICULOS.tolist(), relative=relative, now=seen.iloc[-1], now_relative=relative[-1],
-        sepsis=facts["sepsis"], label_start=facts["label_start"], onset=facts["onset"],
+        sepsis=facts["sepsis"], label_start=facts["label_start"], onset=facts["onset"], late_entry=facts.get("late_entry", False),
         first_alert=first_alert, revealed=revealed, missed=revealed and not in_time,
         warned=(facts["onset"] - first_alert) if revealed and in_time else None, ended=hour >= last,
     )
 
 
+def onset_words(m):
+    """Where onset fell, in words. When the label is already on in the first recorded hour, the record
+    only shows that onset was at or before label start plus 6."""
+    return f"at or before hour {m.onset}" if m.late_entry else f"at hour {m.onset}"
+
+
 def marker_list(m):
-    """The three markers, each shown only once the replay reaches it."""
+    """The three markers. The alert shows when it fires. Onset and label start show together, at the
+    onset hour: the label starts 6 hours before onset, so showing it sooner would give the onset away."""
     marks = []
     if m.first_alert is not None:
         marks.append((m.first_alert, "First alert", "mk-alert", True))
     if m.revealed:
         marks.append((m.onset, "Onset", "mk-onset", True))
-    if m.sepsis and m.label_start <= m.hour:
         marks.append((m.label_start, "Label start", "mk-label", False))
     return marks
 
@@ -382,15 +395,17 @@ def state_tile(m, label):
     """Quiet, Alert or Missed: a shape, a color and a word together."""
     if m.missed:
         kind, word, lead = "missed", "Missed", "No alert by onset."
-        text = [f"Sepsis onset was at hour {m.onset}. The score never crossed the alert line in time."]
-        if m.first_alert is not None:
-            text.append(f"The first alert came at hour {m.first_alert}, after onset.")
+        text = [f"The first alert came at hour {m.first_alert}, after onset."] if m.first_alert is not None else []
     elif m.first_alert is None:
         kind, word, lead = "quiet", "Quiet", "No alert."
         text = ["The score has stayed under the alert line."]
     else:
         kind, word, lead = "alert", "Alert", "Look at this patient first."
-        if m.warned is not None:
+        if m.warned is not None and m.late_entry:
+            text = [f"First fired at hour {m.first_alert}. Sepsis onset was {onset_words(m)}."]
+        elif m.warned == 0:
+            text = [f"First fired at hour {m.first_alert}, the hour of sepsis onset."]
+        elif m.warned is not None:
             text = [f"First fired at hour {m.first_alert}, {plural(m.warned, 'hour')} before sepsis onset at hour {m.onset}."]
         else:
             text = [f"First fired at hour {m.first_alert}."]
@@ -423,15 +438,20 @@ def vital_tile(m, column, name, unit, color, low, high, bands):
     if path:
         parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="1.4" opacity=".55"/>')
     for h, v in zip(m.rows.ICULOS, m.rows[column]):
-        if not pd.isna(v):
-            parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="2.1" fill="{color}"><title>Hour {int(h)}: {v:g} {unit} (measured)</title></circle>')
+        if pd.isna(v):
+            continue
+        tip = f"<title>Hour {int(h)}: {v:g} {unit} (measured)</title>"
+        if low <= v <= high:
+            parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="2.1" fill="{color}">{tip}</circle>')
+        else:   # off the scale: a ring at the edge, so it is not read as a value on the edge
+            parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="3" class="offscale" stroke="{color}">{tip}</circle>')
     if end:
         parts.append(f'<circle cx="{end[0]:.1f}" cy="{end[1]:.1f}" r="4" fill="{color}" stroke="{TILE}" stroke-width="1.5"/>')
     value, age = m.now[f"last_{column}"], m.now[f"hours_since_{column}"]
     if pd.isna(value):
         big, when = '<b class="none">not measured yet</b>', ""
     else:
-        big = f'<b class="display">{value:.1f}</b>' if column == "Temp" else f'<b class="display">{value:.0f}</b>'
+        big = f'<b class="display">{value:g}</b>'
         when = f'<span>{unit}<br>measured {"this hour" if age == 0 else plural(age, "hour") + " ago"}</span>'
     return (
         f'<section class="tile vital" style="--c:{color}"><h3><i></i>{name}</h3><div class="val">{big}{when}</div>'
@@ -439,12 +459,17 @@ def vital_tile(m, column, name, unit, color, low, high, bands):
     )
 
 
-def score_chart(m, narrow=False):
+CHART_SIZES = {"wide": (1100, 40, 14), "mid": (700, 40, 12), "narrow": (380, 30, 8)}   # drawing width, left and right margin
+
+
+def score_chart(m, size="wide"):
     """The model score over the stay so far, as a multiple of the frozen alert line, with the markers.
 
-    `narrow` is the phone layout: the same data with fewer pixels across.
+    The same chart is drawn at three widths (desktop, tablet, phone) and the page shows the one that
+    fits, so the words in it stay a readable size.
     """
-    width, left, right = (380, 30, 8) if narrow else (1100, 40, 14)
+    width, left, right = CHART_SIZES[size]
+    narrow = size == "narrow"
     plot, font = width - left - right, 12.5
     rail = [14, 30, 46]                     # one row per marker word, so two words never share a line
     top, tall = 56, 150 if narrow else 170
@@ -453,7 +478,7 @@ def score_chart(m, narrow=False):
     low, high = math.log10(0.03), math.log10(30)   # log scale from 0.03 to 30 times the alert line
     y = lambda v: top + (high - math.log10(min(max(v, 0.03), 30))) / (high - low) * tall
     parts = [
-        '<defs><linearGradient id="under" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9EEF3" stop-opacity=".16"/>'
+f'<defs><linearGradient id="under-{size}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9EEF3" stop-opacity=".16"/>'
         '<stop offset="1" stop-color="#E9EEF3" stop-opacity="0"/></linearGradient></defs>',
         f'<rect x="{left}" y="{top}" width="{plot}" height="{tall}" rx="8" class="lane"/>',
         f'<rect x="{left}" y="{top}" width="{plot}" height="{y(1) - top:.1f}" class="over"/>',
@@ -470,14 +495,15 @@ def score_chart(m, narrow=False):
     points = [(x(h), y(v)) for h, v in zip(m.hours, m.relative)]
     if len(points) > 1:
         line = " ".join(f"{a:.1f},{b:.1f}" for a, b in points)
-        parts.append(f'<polygon points="{points[0][0]:.1f},{bottom} {line} {points[-1][0]:.1f},{bottom}" fill="url(#under)"/>')
+        parts.append(f'<polygon points="{points[0][0]:.1f},{bottom} {line} {points[-1][0]:.1f},{bottom}" fill="url(#under-{size})"/>')
         parts.append(f'<polyline points="{line}" class="scoreline"/>')
     for h, v in zip(m.hours, m.relative):
         if v >= 1:
             parts.append(f'<circle cx="{x(h):.1f}" cy="{y(v):.1f}" r="3.4" class="hotdot"><title>Hour {int(h)}: {v:.2f} times the alert line</title></circle>')
     parts.append(f'<circle cx="{points[-1][0]:.1f}" cy="{points[-1][1]:.1f}" r="4.6" class="nowdot"/>')
-    every = next(s for s in (1, 2, 5, 10, 20, 50, 100, 200, 500) if m.span / s <= (5 if narrow else 14))
-    for h in range((m.first // every + 1) * every, m.last + 1, every):
+    most_ticks = {"wide": 14, "mid": 9, "narrow": 5}[size]
+    every = next(s for s in (1, 2, 5, 10, 20, 50, 100, 200, 500) if m.span / s <= most_ticks)
+    for h in range(-(-m.first // every) * every, m.last + 1, every):   # from the first hour, rounded up to a tick
         parts.append(f'<text x="{x(h):.1f}" y="{bottom + 17}" class="tick" text-anchor="middle">{h}</text>')
     parts.append(f'<text x="{left + plot}" y="{bottom + 36}" class="tick" text-anchor="end">Hours in the unit</text>')
 
@@ -503,14 +529,14 @@ def score_chart(m, narrow=False):
         parts.append(f'<text x="{at + (7 if anchor == "start" else -7):.1f}" y="{base}" class="{style}-t halo" text-anchor="{anchor}">{word}</text>')
         poles.append((at, row))
     label = f"Model score, hours {m.first} to {m.hour}. It is {m.now_relative:.2f} times the alert line now."
-    return f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} {bottom + 42}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
+    return f'<svg class="{size}" viewBox="0 0 {width} {bottom + 42}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
 
 
 def score_tile(m):
     return (
         '<section class="tile scoretile"><h3>Model score divided by the frozen alert cutoff. Not a probability.</h3>'
         f'<div class="scorehead"><b class="display{" hot" if m.now_relative >= 1 else ""}">{m.now_relative:.2f}</b>'
-        f'<span>times the alert line at hour {m.hour}</span></div>{score_chart(m)}{score_chart(m, narrow=True)}</section>'
+        f'<span>times the alert line at hour {m.hour}</span></div>{"".join(score_chart(m, size) for size in CHART_SIZES)}</section>'
     )
 
 
@@ -522,8 +548,14 @@ def happened_tile(m):
             "A timely catch. The first alert came in the 12 hours before onset." if m.warned <= 12
             else "Alerted very early. More than 12 hours before onset is counted separately from a timely catch."
         )
+        if m.late_entry:   # the true onset may be earlier than the record shows, so the hours of warning are not known
+            head = f"Alerted by hour {m.onset}"
+            body = f"The sepsis label was already on when the record starts, so onset was {onset_words(m)} and the hours of warning cannot be known."
     elif m.revealed:
-        head, body = "Missed", f"Sepsis onset was at hour {m.onset}. The score never crossed the alert line in time. This is a miss."
+        head = "Missed"
+        body = f"Sepsis onset was {onset_words(m)}. The score never crossed the alert line in time. This is a miss."
+        if m.late_entry:
+            body += " The sepsis label was already on when the record starts."
     elif not m.sepsis and m.ended:
         head = "No sepsis, no alert" if m.first_alert is None else "False alarm"
         body = "End of the record. This patient never developed sepsis" + (
@@ -558,7 +590,7 @@ def stay_strip(m, narrow=False):
         parts.append(f'<line x1="{at:.1f}" x2="{at:.1f}" y1="{base - 14}" y2="{base + 14}" class="{style}" style="stroke-width:2.5"/>')
         parts.append(
             f'<text x="{at + (-6 if anchor == "end" else 6):.1f}" y="{base - 20 if i == 0 else base + 31}" class="{style}-t" '
-            f'font-size="13" text-anchor="{anchor}">{word}, hour {h}</text>'
+            f'font-size="13" text-anchor="{anchor}">{word}, {"by hour" if style == "mk-onset" and m.late_entry else "hour"} {h}</text>'
         )
     return (
         f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} 84" role="img" '
@@ -588,9 +620,11 @@ def inputs_tile(m):
         cells.append(f'<div class="cell"><span>{name}</span><b>{value:g} <small>{unit}</small></b><span>measured {when}{stale}</span></div>')
     return (
         f'<section class="tile inputs"><h3>What the model could see at hour {m.hour}</h3><div class="cells">{"".join(cells)}</div>'
-        '<p class="caption">"Stale" means a vital sign older than 4 hours or a lab older than 24 hours. '
-        "That cutoff is my own choice for this display. Units are as listed in the dataset's description. "
-        "The model also sees trends, time in the unit, and how long ago each value was measured.</p></section>"
+        f'<p class="caption">These are {len(SEEN_TABLE)} of the {len(VITALS) + len(LABS)} measured values the model reads '
+        f"({len(VITALS)} vital signs and {len(LABS)} labs). It also sees the other {len(VITALS) + len(LABS) - len(SEEN_TABLE)} labs, age, sex, trends, "
+        "time in the unit, and how long ago each value was measured. "
+        f'"Stale" means a vital sign older than {STALE_AFTER["vital"]} hours or a lab older than {STALE_AFTER["lab"]} hours. '
+        "That cutoff is my own choice for this display. Units are as listed in the dataset's description.</p></section>"
     )
 
 
@@ -606,12 +640,13 @@ def show(pid, hour):
             f"</section>{proof_tile()}</div>"
         )
     first, last = hours_of(pid)
-    m = moment(pid, int(min(max(hour, first), last)))
+    m = moment(pid, int(min(max(round(hour), first), last)))
     vitals = "".join(vital_tile(m, *tile) for tile in VITAL_TILES)
     return (
         f'<div class="grid12">{state_tile(m, LABELS[pid])}{vitals}{score_tile(m)}{happened_tile(m)}{proof_tile()}{inputs_tile(m)}</div>'
         f'<p class="source">Source: PhysioNet / Computing in Cardiology Challenge 2019, {SITE}, one public de-identified record. '
-        "In the four small charts a dot is a real measurement, the line carries the last one forward, and the gray strips are where the "
+        "In the four small charts a dot is a real measurement, a ring at the edge is a measurement off the scale, the line carries the "
+        "last one forward, and the gray strips are where the "
         "NEWS2 bedside chart (Royal College of Physicians, 2017, made for general wards) gives 1, 2 or 3 points. The model does not use NEWS2. "
         "Retrospective replay of a saved record, not a live monitor. Nothing you do here is stored. "
         "This project is a prototype and is not medical advice.</p>"
@@ -658,9 +693,10 @@ def warning_chart():
     )
 
 
-def curve_chart(data, narrow=False):
+def curve_chart(data, size="wide"):
     """Utility at hospital B against the number of local patients added to training."""
-    width, left, right = (380, 40, 14) if narrow else (1100, 52, 24)
+    width, left, right = {"wide": (1100, 52, 24), "mid": (700, 48, 22), "narrow": (380, 40, 16)}[size]
+    narrow = size == "narrow"
     top, tall = 18, 220
     plot, bottom = width - left - right, top + tall
     points = [(pt["local"], pt["utility"]) for pt in data["points"]]       # (local patients added, utility)
@@ -681,13 +717,13 @@ def curve_chart(data, narrow=False):
     parts.append(f'<polyline points="{line}" class="scoreline"/>')
     for i, (local, utility) in enumerate(points):
         at, up = x(local), y(utility)
-        named = not narrow or local in (0, 2000, 5000, most)      # on a phone the first labels would sit on each other
+        named = not narrow or local in (0, 1000, 5000, most)      # on a phone the first labels would sit on each other
         last = i == len(points) - 1
         parts.append(f'<circle cx="{at:.1f}" cy="{up:.1f}" r="4.6" class="nowdot"><title>{local:,} local patients: utility {utility:.3f}</title></circle>')
         if named:
             side = "end" if last else "middle"
             parts.append(f'<text x="{at:.1f}" y="{bottom + 17}" class="tick" text-anchor="{side}">{local:,}</text>')
-        if named or local == 1000:
+        if named:
             anchor, shift, drop = ("end", -2, 22) if last else ("start", 8, 16) if i < 3 else ("middle", 0, -12)
             parts.append(f'<text x="{at + shift:.1f}" y="{up + drop:.1f}" class="value halo" text-anchor="{anchor}">{utility:.3f}</text>')
     at, up = x(alone_local), y(alone_utility)
@@ -698,7 +734,7 @@ def curve_chart(data, narrow=False):
     parts.append(f'<text x="{left + plot}" y="{bottom + 36}" class="tick" text-anchor="end">{x_title}</text>')
     spoken = ". ".join(f"{local:,} local patients: {utility:.3f}" for local, utility in points)
     label = f"{y_title}. {spoken}. {alone_local:,} local patients alone: {alone_utility:.3f}."
-    return f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} {bottom + 44}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
+    return f'<svg class="{size}" viewBox="0 0 {width} {bottom + 44}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
 
 
 def curve_tile():
@@ -708,7 +744,7 @@ def curve_tile():
     return (
         '<section class="tile wide12 after"><h3><em>After-the-fact</em>How much local data does a new hospital need?</h3>'
         f'<div class="charttitle display">{data["title"]}</div><p class="caption ytitle">{data["y_title"]}</p>'
-        f'{curve_chart(data)}{curve_chart(data, narrow=True)}<p class="caption">{data["caption"]}</p></section>'
+        f'{"".join(curve_chart(data, size) for size in CHART_SIZES)}<p class="caption">{data["caption"]}</p></section>'
     )
 
 
@@ -732,7 +768,7 @@ def travel_tab():
 START = CASES["cases"][0]["pid"]            # the page opens on the first saved patient, at its first hour
 START_FIRST, START_LAST = hours_of(START)
 
-with gr.Blocks(css=CSS, js=FORCE_DARK, theme=gr.themes.Base(), analytics_enabled=False, title="Sepsis Early Warning: does it travel?") as demo:
+with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analytics_enabled=False, title="Sepsis Early Warning: does it travel?") as demo:
     gr.HTML(
         '<div class="topline"><span class="name display">Sepsis Early Warning</span>'
         '<span class="tag">Research prototype. Not medical advice.</span></div>'
@@ -748,7 +784,8 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, theme=gr.themes.Base(), analytics_enabled
                     pills = [
                         gr.Button(
                             case["label"], variant="primary" if case["pid"] == START else "secondary",
-                            elem_classes=["pill", PILL_SHAPE.get(case["outcome"], "alert")], scale=0, min_width=0,
+                            elem_classes=["pill", "neutral" if truth(case["pid"]).get("late_entry") else PILL_SHAPE.get(case["outcome"], "neutral")],
+                            scale=0, min_width=0,
                         )
                         for case in CASES["cases"]
                     ]

@@ -32,10 +32,11 @@ Because the label is built partly from when staff ordered antibiotics and cultur
 ## What the Replay screen shows
 
 - **Three states.** Quiet: the score has not crossed the alert line. Alert: it has crossed it at least once, and the tile stays on Alert after that. Missed: onset has passed with no alert. Each state has its own shape, color and word.
-- **The outcome is hidden until the replay reaches it.** The onset marker, the 12 hour window and "What happened" appear only at the onset hour, or at the end of the record for a patient who never developed sepsis. The model never sees them.
+- **The outcome is hidden until the replay reaches it.** The onset marker, the label start marker, the 12 hour window and "What happened" appear only at the onset hour, or at the end of the record for a patient who never developed sepsis. The model never sees them.
+- **Late entry.** When the sepsis label is already on in the first recorded hour, the record only shows that onset was at or before that hour plus 6. The screen says "at or before" for those patients.
 - **A timely catch** on screen is the same thing as "caught" above.
 - **The gray strips in the four small charts** are the scoring ranges of the NEWS2 bedside chart (Royal College of Physicians, 2017), checked against the college's own Chart 1 on November 14, 2026. NEWS2 was made for adults on general wards, not for intensive care. The strips are only there to help read the charts. The model does not use NEWS2, and I do not compute a NEWS2 score.
-- **The four vital signs with tiles** were picked because NEWS2 has ranges for them. The model sees many more inputs, listed in the last tile.
+- **The four vital signs with tiles** were picked because NEWS2 has ranges for them. The last tile lists 15 of the 33 measured values the model reads (7 vital signs and 26 labs). The other 18 labs, age and sex are not shown on screen.
 
 ## Where the alert line came from
 
@@ -65,5 +66,6 @@ RESULTS_PLACEHOLDER
 
 - Data and challenge: Reyna MA, Josef CS, Jeter R, et al. "Early Prediction of Sepsis from Clinical Data: the PhysioNet/Computing in Cardiology Challenge 2019." Critical Care Medicine, 2020.
 - Scoring: the challenge organizers' own scoring script, unchanged (BSD 2-Clause license).
-- Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio.
+- Libraries: pandas, NumPy, scikit-learn, Gradio.
+- Fonts: Sora and IBM Plex Sans, both under the SIL Open Font License, loaded from Google Fonts.
 - AI tools: Claude Code wrote most of the code and ran literature checks. ChatGPT (Codex) gave an outside review after the freeze. Tanner chose the question, the user, the alert budget and the definitions, and decided what to keep.

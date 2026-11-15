@@ -273,8 +273,8 @@ if curve_file.exists():
         "caption": (
             "After-the-fact: this was run after the hospital B result, so it is not part of the frozen test. "
             f"Hospital B was cut once into {n(most['local'])} local patients to learn from and {n(mixed.patients.iloc[0])} test patients "
-            f"({n(mixed.sepsis_patients.iloc[0])} with sepsis) that no model trained on. Each point is a model trained on hospital A's "
-            f"{n(from_a)} patients plus that many local ones. Each alert cutoff was set on the scored test patients themselves, at a {cap}% "
+            f"({n(mixed.sepsis_patients.iloc[0])} with sepsis) that no model trained on. Each point is a model trained on "
+            f"{n(from_a)} hospital A training patients plus that many local ones. Each alert cutoff was set on the scored test patients themselves, at a {cap}% "
             "false alarm cap, the same way for every point. So this shows the shape of the curve. It is not a score to quote. "
             f"The first 1,000 local patients close {100 * share:.0f}% of the gap between none ({none['utility']:.3f}) and "
             f"{n(most['local'])} ({most['utility']:.3f}). A model trained on the {n(alone.train_patients)} local patients alone, with no "
