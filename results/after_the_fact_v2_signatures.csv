@@ -1,0 +1,3 @@
+model,utility,patients,sepsis_patients,caught,very_early,missed,missed_but_alerted_after_onset,alerted_by_onset_share,caught_share,non_sepsis_patients,false_alarms,false_alarm_share,false_alerts_per_true_alert,median_hours_of_warning,alerts_per_1000_patient_days,repeat_alerts_per_alerted_patient
+"baseline, 100 inputs",0.3993435286941106,16268,1432,304,737,391,30,0.7269553072625698,0.2122905027932961,14836,3816,0.25721218657320033,3.6657060518731988,31.0,379.11811352650125,1.0421526498874565
+"with signatures, 114 inputs",0.3994345530276314,16268,1432,300,737,395,40,0.7241620111731844,0.20949720670391062,14836,3783,0.2549878673496899,3.648023143683703,31.0,380.06780819966383,1.058641975308642

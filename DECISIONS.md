@@ -162,6 +162,17 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Test: the same nested cross-validation, the same folds, and the same 25% cap as the hospital A only baseline logged above (utility 0.399, 72.7% alerted by onset, 391 of 1,432 missed). Same settings, 200 trees.
   - Keep rule: at least 1.5 points more sepsis patients alerted by onset (74.2% or more, so 369 or fewer missed) and utility not below 0.389.
   - Claude's guess, logged in advance: it fails the keep rule. Utility within 0.005 of 0.399 and alerted by onset within 1 point of 72.7%. Reason: the same three signals as plain values were among the 64 inputs that added only 0.8 points. About a one in five chance it passes.
+- Sat 11/14, 5:10 PM. RESULT of the compact signature inputs (results/after_the_fact_v2_signatures.csv). Nested, hospital A only, 25% cap, same folds as the baseline. The baseline was read back from its saved scores and cutoffs and reproduced exactly (0.399, 72.7%, 391 missed), so the comparison is like for like.
+
+  | Hospital A, 25% cap | Utility | Timely | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | Baseline, 100 inputs | 0.3993 | 304 of 1,432 | 72.7% | 391 | 3,816 of 14,836 (25.7%) |
+  | With signatures, 114 inputs | 0.3994 | 300 of 1,432 | 72.4% | 395 | 3,783 of 14,836 (25.5%) |
+
+  - Keep rule: NOT met. Alerted by onset moved by minus 0.3 points and utility by plus 0.0001. Dropped. The 100 input model stays.
+  - Guess against result: right. Guessed utility within 0.005 and alerted by onset within 1 point.
+  - What it means: this is the ninth idea aimed at the model's ranking that moved the yardstick by under 2 points. The model already has each signal's latest value, 6 hour change, mean, lowest and highest, and trees can build shape from those. Honest limit on the claim: this tested a compact order 2 version, not the challenge winner's full method, so it does not show that full signatures would fail.
+
 - Sat 11/14, 5:07 PM. PLAN, written before running: how much local data does a new hospital need? (script scripts/v2_local_data_curve.py). After-the-fact. It follows from the both-hospitals result: with no hospital B data the model sits near 0.27 there, with all of it 0.406. This measures the steps in between.
   - Hospital B is cut once by patient (seed 2026, same share of sepsis in each half): 10,000 test patients that no arm ever trains on, and 10,000 local patients to draw from.
   - Arms: hospital A's 16,268 fit and tune patients plus the first 0, 500, 1,000, 2,000, 5,000 or 10,000 local patients in one fixed shuffled order, so each arm contains the one before it. One more arm trains on the 10,000 local patients alone, with no hospital A data, to see whether hospital A's data helps hospital B at all. Same 100 inputs, same settings, 200 trees, no hospital name given to the model.
