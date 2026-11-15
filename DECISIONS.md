@@ -237,6 +237,17 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Same 100 inputs, same settings, 200 trees, a regressor in place of the classifier. Same nested cross-validation, folds and 25% cap as the hospital A only baseline (0.399, 72.7% alerted by onset, 391 missed).
   - Keep rule: 74.2% or more alerted by onset and utility not below 0.389.
   - Claude's guess, logged in advance: utility moves by 0.00 to plus 0.01, alerted by onset stays within 1.5 points, and the keep rule is not met. About a one in five chance it passes.
+- Sat 11/14, 5:51 PM. RESULT of the utility-shaped target (results/after_the_fact_v2_utility_target.csv). Nested, hospital A only, 25% cap, same folds. The target was checked against the organizers' scoring function at every hour of a test patient before training, and matched.
+
+  | Hospital A, 25% cap | Utility | Timely | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | Baseline: yes or no label | 0.399 | 304 of 1,432 | 72.7% | 391 | 3,816 of 14,836 (25.7%) |
+  | Utility-shaped target | 0.374 | 250 of 1,432 | 64.7% | 505 | 3,101 of 14,836 (20.9%) |
+
+  - Keep rule: NOT met. It is worse on both counts: alerted by onset down 8.0 points, utility down 0.025. Dropped.
+  - One thing that makes the table look worse than it is: this model's nested cutoff landed at 20.9% false alarms, under the 25% cap, so it alerted on fewer patients than the baseline did. As a scouting check, with both cutoffs set on the scored patients at exactly 25%: utility 0.383 against 0.397, alerted by onset 69.0% against 71.4%, missed 444 against 409. So it is still worse at the same alarm rate, by less.
+  - Guess against result: wrong. Guessed utility flat to plus 0.01 and catches within 1.5 points. It lost on both. Guessed the keep rule would not be met (right).
+  - What it means: for this model and these inputs, the plain yes or no label ranks patients better than the score-shaped number. That closes the list of ranking ideas with outside evidence behind them. Honest limit: the winner paired this target with other choices (a different library, signatures, a cutoff picked to maximize utility with no cap), so this does not show their whole method would fail here.
 
 ## Why no new outside data
 
