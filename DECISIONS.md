@@ -171,13 +171,33 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
 
   - Keep rule: NOT met. Alerted by onset moved by minus 0.3 points and utility by plus 0.0001. Dropped. The 100 input model stays.
   - Guess against result: right. Guessed utility within 0.005 and alerted by onset within 1 point.
-  - What it means: this is the ninth idea aimed at the model's ranking that moved the yardstick by under 2 points. The model already has each signal's latest value, 6 hour change, mean, lowest and highest, and trees can build shape from those. Honest limit on the claim: this tested a compact order 2 version, not the challenge winner's full method, so it does not show that full signatures would fail.
+  - What it means: like every earlier idea aimed at the model's ranking, it moved the yardstick by under 2 points. The model already has each signal's latest value, 6 hour change, mean, lowest and highest, and trees can build shape from those. Honest limit on the claim: this tested a compact order 2 version, not the challenge winner's full method, so it does not show that full signatures would fail.
 
 - Sat 11/14, 5:07 PM. PLAN, written before running: how much local data does a new hospital need? (script scripts/v2_local_data_curve.py). After-the-fact. It follows from the both-hospitals result: with no hospital B data the model sits near 0.27 there, with all of it 0.406. This measures the steps in between.
   - Hospital B is cut once by patient (seed 2026, same share of sepsis in each half): 10,000 test patients that no arm ever trains on, and 10,000 local patients to draw from.
   - Arms: hospital A's 16,268 fit and tune patients plus the first 0, 500, 1,000, 2,000, 5,000 or 10,000 local patients in one fixed shuffled order, so each arm contains the one before it. One more arm trains on the 10,000 local patients alone, with no hospital A data, to see whether hospital A's data helps hospital B at all. Same 100 inputs, same settings, 200 trees, no hospital name given to the model.
   - Scoring: every arm is scored on the same 10,000 test patients. The cutoff for each arm is set on those test patients at exactly the 25% cap. That is the same shortcut as the earlier scouting tables: the cutoff sees the patients it scores. It is used here because it is identical for every arm, so the arms differ only in how well the model ranks patients. So this curve is a guide to the shape, not a result to quote as a score. Hourly AUROC, which needs no cutoff, is reported next to it.
   - Claude's guess, logged in advance: utility climbs from about 0.30 with no local patients to about 0.39 with 10,000, and half of that gain arrives by 2,000 local patients. The local-only arm lands a little under the arm with hospital A plus 10,000.
+- Sat 11/14, 5:16 PM. RESULT of the local data curve (results/after_the_fact_v2_local_data_curve.csv). Scored on the same 10,000 hospital B test patients (571 with sepsis). Each cutoff was set on those test patients at the 25% cap, the same way for every arm, so read the shape and not the level.
+
+  | Trained on | Utility | Hourly AUROC | Timely | Alerted by onset | Missed (of 571) |
+  |---|---|---|---|---|---|
+  | Hospital A only, no local patients | 0.262 | 0.776 | 84 | 58.1% | 239 |
+  | Hospital A + 500 local | 0.297 | 0.800 | 124 | 66.2% | 193 |
+  | Hospital A + 1,000 local | 0.326 | 0.816 | 148 | 71.5% | 163 |
+  | Hospital A + 2,000 local | 0.341 | 0.823 | 150 | 71.8% | 161 |
+  | Hospital A + 5,000 local | 0.368 | 0.840 | 167 | 76.4% | 135 |
+  | Hospital A + 10,000 local | 0.385 | 0.849 | 171 | 76.9% | 132 |
+  | 10,000 local only, no hospital A | 0.399 | 0.857 | 166 | 77.4% | 129 |
+
+  - Local data helps fast, then slows. The first 1,000 local patients (about 57 of them with sepsis) recover 52% of the utility gap between no local data and 10,000. The first 500 cut misses from 239 to 193.
+  - The surprise: a model trained on the 10,000 local patients alone beat the model that also had hospital A's 16,268 (0.399 against 0.385, AUROC 0.857 against 0.849, 129 missed against 132). Once a hospital has enough of its own patients, the other hospital's data does not help and may hurt a little. One test set and one split, so the size of that gap is not settled. It gets a proper nested test next.
+  - Guess against result: no local data guessed at about 0.30 (wrong, lower: 0.262). 10,000 local guessed at about 0.39 (right: 0.385). Half the gain by 2,000 (right, it came sooner: 64% by 2,000). Local-only guessed a little under the mixed model (wrong: it was above).
+- Sat 11/14, 5:16 PM. PLAN, written before running: a hospital B only model, nested (script scripts/v2_local_only.py). After-the-fact. The curve above suggests each hospital may be better served by a model trained only on its own patients. Hospital A's own-data model is already measured (0.399). This measures hospital B's.
+  - All 20,000 hospital B patients, the same outer folds as the both-hospitals run, 2 inner folds to set the cutoff at the 25% cap. Same 100 inputs, settings and 200 trees.
+  - Baseline on the same patients and folds: the both-hospitals model at hospital B (utility 0.406, 80.7% alerted by onset, 220 of 1,142 missed), read back from its saved scores.
+  - Keep rule: at least 1.5 points more alerted by onset (82.2% or more, 203 or fewer missed) and utility not below 0.396. If it is met, the best model for hospital B is its own. If not, the both-hospitals model stays the best version 2 model.
+  - Claude's guess, logged in advance: utility 0.40 to 0.42 at hospital B, a gain too small to meet the keep rule. About a one in four chance it passes.
 
 ## Why no new outside data
 
