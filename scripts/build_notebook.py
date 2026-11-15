@@ -421,6 +421,119 @@ Would this be safe to use? **No.** It would need a prospective test at the hospi
 This project is a prototype and is not medical advice.
 """)
 
+md("""
+## 12. After the hospital B run: version 2 (after-the-fact)
+
+**Everything in this section was run after hospital B had been scored.** Version 1 above (utility 0.368 at hospital A dev and 0.238 at hospital B, with 109 of 1,142 timely alerts there) stays the result of record, and nothing below replaces it. Version 2 asks a different question: what is the best model that can be built once both hospitals have been seen?
+
+Three things to keep in mind while reading these tables:
+- **None of this is a test of travel.** Hospital B had already been seen, and several of these models train on it.
+- **It is a different test from version 1.** Most rows use a 25% false alarm cap where version 1 used a 15% budget, so these scores are not a like for like improvement on version 1.
+- **Each plan was written down before its run**, with a guess, in the "Version 2" section of `DECISIONS.md`. The cells below train nothing. They read the saved result files `results/after_the_fact_v2_*.csv`, which the `scripts/v2_*.py` scripts wrote.
+""")
+
+code("""
+pd.set_option("display.max_colwidth", 80)
+
+def v2_table(file, labels, utility_decimals=3):
+    # Read one saved version 2 result file and lay it out the same way every time.
+    t = pd.read_csv(ROOT / "results" / file)
+    out = t[labels].copy()
+    out["utility"] = t.utility.round(utility_decimals)
+    out["timely"] = [f"{c:,} of {s:,}" for c, s in zip(t.caught, t.sepsis_patients)]
+    out["alerted by onset"] = [f"{100 * x:.1f}%" for x in t.alerted_by_onset_share]
+    out["missed"] = t.missed
+    out["false alarms"] = [f"{f:,} of {n:,} ({100 * r:.1f}%)" for f, n, r in zip(t.false_alarms, t.non_sepsis_patients, t.false_alarm_share)]
+    return out
+""")
+
+md("""
+### 12.1 One model trained on both hospitals
+
+Trained on hospital A's fit and tune patients plus all of hospital B, and scored with nested cross-validation: no patient is scored by a model or an alert line that saw them. The 25% cap is applied at each hospital separately. A hospital A only model on the same folds is the baseline.
+""")
+
+code("""
+both = v2_table("after_the_fact_v2_both_hospitals.csv", ["model", "cutoff", "cap", "scored_on"])
+both[(both.cutoff == "per hospital") & (both.cap == 0.25)].drop(columns=["cutoff", "cap"]).reset_index(drop=True)
+""")
+
+md("""
+**What it means.** With hospital B's labeled patients in training and its own alert line, hospital B reaches utility 0.406 with 220 of 1,142 sepsis patients missed. This model has seen both hospitals, so it cannot claim to travel. At hospital A the extra data did not meet the keep rule: 0.402 against 0.399 for the hospital A only model, with no more patients alerted by onset.
+
+For comparison only, the same model with one shared cutoff for both hospitals:
+""")
+
+code("""
+both[(both.cutoff == "shared") & (both.cap == 0.25)].drop(columns=["cutoff", "cap"]).reset_index(drop=True)
+""")
+
+md("""
+One shared alert line breaks the 25% cap at hospital A (32.9% false alarms) and leaves hospital B well under it (19.5%). Each hospital needs its own alert line, even inside one model.
+
+### 12.2 The frozen version 1 model with hospital B's own alert line
+
+The model is not retrained. Its cutoff is set on hospital A dev at the 25% cap. At hospital B the first 2,000 patients by ID are a burn-in group: using their scores only, never their sepsis labels, the cutoff is moved until it alerts on the same share of all patients as at hospital A dev. The other 18,000 patients are then scored once.
+""")
+
+code("""
+v2_table("after_the_fact_v2_alert_line.csv", ["alert_line", "scored_on"])
+""")
+
+md("""
+**What it means.** On the same 18,000 patients, hospital B's own line misses 383 of 1,024 sepsis patients where hospital A's line misses 484. But false alarms go from 15.2% to 28.0%, and utility barely moves (0.265 to 0.271). Moving the line trades alarms for catches. It does not make the model better at ranking hospital B's patients.
+
+### 12.3 Run backwards: train at hospital B, test at hospital A
+
+The mirror of version 1. Hospital B is cut by patient, 80% to train and 20% to set the cutoff. Then all of hospital A is scored once.
+""")
+
+code("""
+v2_table("after_the_fact_v2_reverse.csv", ["budget", "scored_on"])
+""")
+
+md("""
+**What it means.** In version 1, going from A to B, the model got quieter: a 15% budget delivered 7.2% false alarms. Going from B to A it gets much noisier: a 15% budget delivers 45.0%. An alert budget set at one hospital does not hold at the other, in either direction.
+
+### 12.4 How much local data does a new hospital need?
+
+Hospital B is cut once into 10,000 test patients and 10,000 local patients. Each arm trains on hospital A plus some of the local patients, and every arm is scored on the same 10,000 test patients. **Read the shape, not the level.** Each arm's cutoff was set on the test patients it scores, at exactly the 25% cap. That is a shortcut, so these are not scores to quote. Hourly AUROC needs no cutoff and is shown next to utility.
+""")
+
+code("""
+v2_table("after_the_fact_v2_local_data_curve.csv", ["arm", "train_patients", "hourly_auroc"]).round({"hourly_auroc": 3})
+""")
+
+md("""
+**What it means.** Local data helps fast, then slows: utility goes from 0.262 with no local patients to 0.326 with 1,000 and 0.385 with 10,000. In this one split the local-only arm came out ahead of the arm that also had hospital A (0.399 against 0.385). The proper nested test in 12.5 did not confirm that.
+
+### 12.5 Two ideas that failed the keep rule
+
+The keep rule, set in advance: at least 1.5 points more sepsis patients alerted by onset, and utility not lower by more than 0.01. Both tests are nested, at the 25% cap, on the same folds as their baseline.
+""")
+
+code("""
+# Signature inputs: 14 extra inputs, 12 of them short summaries of the recent shape of three signals. Hospital A only.
+v2_table("after_the_fact_v2_signatures.csv", ["model"], utility_decimals=4)
+""")
+
+code("""
+# A model trained on hospital B alone, against the both-hospitals model, on all of hospital B.
+v2_table("after_the_fact_v2_local_only.csv", ["model"])
+""")
+
+md("""
+**What it means.** Signature inputs moved utility from 0.3993 to 0.3994 and alerted by onset from 72.7% to 72.4%, so they were dropped. This was a compact version, not the challenge winner's full method, so it does not show that the full method would fail. The hospital B only model scored 0.394 against the both-hospitals model's 0.406, with alerted by onset level (80.6% against 80.7%). The both-hospitals model stays the best version 2 model.
+
+### What version 2 adds up to
+
+- At the 25% cap the frozen model scores 0.265 to 0.271 at hospital B, whichever alert line it uses. With hospital B's labeled patients in training, the both-hospitals model reaches 0.406 there.
+- An alert budget set at one hospital does not hold at the other, in either direction.
+- So a new hospital needs its own labeled patients and its own alert line. That is a finding about these two hospitals, made after the fact. Version 1 is still the only result here that tested travel.
+
+This project is a prototype and is not medical advice.
+""")
+
 notebook = nbf.v4.new_notebook(cells=cells, metadata={
     "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
 })

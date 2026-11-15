@@ -3,7 +3,7 @@
 **Track:** Health. **Team:** Tanner Barber, solo. This project is a prototype and is not medical advice.
 
 ## The problem
-About 1.7 million adults in the U.S. develop sepsis each year, and at least 350,000 die in the hospital or are discharged to hospice ([CDC](https://www.cdc.gov/sepsis/about/)). An intensive care nurse cannot study every chart every hour. Warning models exist, but each is built at one hospital. Does one still work when it moves?
+About 1.7 million adults in the U.S. develop sepsis each year, and at least 350,000 die in the hospital or are discharged to hospice ([CDC](https://www.cdc.gov/sepsis/about/)). A nurse cannot study every chart every hour. Warning models exist, but each is built at one hospital. Does one still work when it moves?
 
 ## What we built
 I built a model that reads an intensive care patient's record hour by hour (7 vital signs, 26 labs, age, sex, hours in the unit) and alerts when its score crosses a fixed line. **The user is an intensive care nurse deciding which patient to look at first.** A replay tool plays back a real, de-identified stay and shows what the model saw each hour and when it alerted.
@@ -33,17 +33,18 @@ Utility is the challenge's official score (1 is perfect). **At hospital B the fu
 
 **Where it fails** (picked by rule, by patient ID; all five are in the notebook):
 1. Missed, man aged 50: vital signs normal throughout, and no lab measured until the onset hour.
-2. Missed, man aged 77: fever for hours and white cells at 22.4. The SIRS rule would have fired. The model's score peaked at 0.34 of the alert line.
+2. Missed, man aged 77: fever for hours and white cells at 22.4. SIRS would have fired. The model's score peaked at 0.34 of the alert line.
 3. False alarm, man aged 36: the score jumped for one hour when a set of labs appeared and no vital signs were recorded.
 
 Pattern: first-day sepsis. When the label starts before hour 24, 57 of 514 were alerted by onset (11%), against 429 of 628 later (68%). Late-entry cases, labeled from their first row: 14 of 223 caught (SIRS rule: 150 of 223).
 
 **Who it works worse for** (hospital B, alerted by onset): women 210 of 495 (42%), men 276 of 647 (43%). Under 50: 116 of 276 (42%). 50 to 64: 141 of 351 (40%). 65 to 79: 183 of 386 (47%). **80 and over: 46 of 129 (36%), the worst group.** False alarms: women 6.2%, men 8.1%. The data has no race or ethnicity field, so those were not checked.
-
 **Limits:** retrospective, and never tried by a nurse. The label is built partly from when staff ordered antibiotics and cultures, so the model partly learns hospital habits.
 
+**After the frozen run (after-the-fact, a different test, not a like for like improvement).** Under a 25% false alarm cap, not the 15% budget, a model trained on both hospitals scored utility 0.402 at A and 0.406 at B (220 of 1,142 missed, 25.2% false alarms). It has seen B, so it cannot claim to travel. The frozen model with B's own alert line, set without labels, scored 0.271. A 15% budget set at B gave 45.0% false alarms at A.
+
 ## What we'd do next
-I would set the alert line for each hospital from its own unlabeled data (a planned first try reached 629 of 1,142 alerted by onset at 17.1% false alarms), then test at a hospital nobody has looked at.
+I would set the alert line for each hospital from its own unlabeled data (a planned first try reached 629 of 1,142 alerted by onset at 17.1% false alarms), then test at a hospital nobody has looked at. The after-the-fact runs say a new hospital also needs its own labeled patients.
 
 ## Sources
 Data: PhysioNet Challenge 2019, CC BY 4.0 (Reyna et al., Critical Care Medicine, 2020). Scoring: the organizers' script, unchanged (BSD 2-Clause). No pretrained models. Libraries: pandas, NumPy, scikit-learn, Plotly, Gradio, Jupyter. Evidence behind the prediction is cited in [DECISIONS.md](https://github.com/tanner0828barber-collab/sepsis-early-warning/blob/main/DECISIONS.md). Every credit with its link: [README](https://github.com/tanner0828barber-collab/sepsis-early-warning#data-and-credits).
