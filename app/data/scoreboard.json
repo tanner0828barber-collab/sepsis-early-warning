@@ -214,5 +214,41 @@
     "source": "Source: Hospital B, 486 sepsis patients with an alert at or before onset. Onset is the challenge's sepsis time. Alerts more than 12 hours early are counted separately as very early."
   },
   "limits": "Hospital B, 20,000 patients. These are retrospective results on recorded data, not performance in clinical use.\n\n- **Timely catches are rare.** Of 1,142 sepsis patients, 109 (9.5%) got their first alert in the 12 hours before onset. 377 (33.0%) were alerted earlier than that. 656 (57.4%) were missed.\n- **False alarms.** 1,358 of 18,858 patients who never developed sepsis were alerted at least once (7.2%). That is 12.5 false alarms per timely catch. This counts patients, not alerts.\n- **Workload.** 115 alerts per 1,000 patient-days, and 0.9 repeat alerts per alerted patient.\n- **It did not beat the clock.** A model that sees only hours in the unit scored utility 0.242. The full model scored 0.238.\n- **First-day sepsis.** When the sepsis label starts before hour 24, 57 of 514 patients were alerted by onset (11.1%), against 429 of 628 (68.3%) when it starts later.\n- **Late-entry cases** (label already on in the first recorded hour): the model caught 14 of 223. The modified SIRS rule caught 150 of 223.\n- **Hospital A dev numbers are calibration numbers.** The alert line was set on those 4,068 patients, so their 15.0% false alarm share is true by construction, not a measured result.\n- **The score is not a probability.** It is the model's output divided by the frozen alert cutoff. Calibration was not checked.\n\n### By age and sex, Hospital B\n\n| Group | Sepsis patients | Timely | Alerted by onset | Missed | False alarms |\n|---|---|---|---|---|---|\n| Women | 495 | 44 (8.9%) | 210 (42.4%) | 285 (57.6%) | 545 of 8,773 (6.2%) |\n| Men | 647 | 65 (10.0%) | 276 (42.7%) | 371 (57.3%) | 813 of 10,085 (8.1%) |\n| Under 50 | 276 | 26 (9.4%) | 116 (42.0%) | 160 (58.0%) | 364 of 4,542 (8.0%) |\n| 50 to 64 | 351 | 30 (8.5%) | 141 (40.2%) | 210 (59.8%) | 418 of 5,927 (7.1%) |\n| 65 to 79 | 386 | 38 (9.8%) | 183 (47.4%) | 203 (52.6%) | 462 of 6,196 (7.5%) |\n| 80 and over | 129 | 15 (11.6%) | 46 (35.7%) | 83 (64.3%) | 114 of 2,193 (5.2%) |\n\nThe group with the lowest share alerted by onset is **80 and over**. This is a first check, not a fairness audit. The data has no race, ethnicity, language or insurance fields, so those groups cannot be checked at all.",
+  "local_curve": {
+    "title": "The first 1,000 local patients close half the gap",
+    "points": [
+      {
+        "local": 0,
+        "utility": 0.262
+      },
+      {
+        "local": 500,
+        "utility": 0.297
+      },
+      {
+        "local": 1000,
+        "utility": 0.326
+      },
+      {
+        "local": 2000,
+        "utility": 0.341
+      },
+      {
+        "local": 5000,
+        "utility": 0.368
+      },
+      {
+        "local": 10000,
+        "utility": 0.385
+      }
+    ],
+    "alone": {
+      "local": 10000,
+      "utility": 0.399
+    },
+    "x_title": "Hospital B patients added to training",
+    "y_title": "Utility on 10,000 hospital B test patients",
+    "caption": "After-the-fact: this was run after the hospital B result, so it is not part of the frozen test. Hospital B was cut once into 10,000 local patients to learn from and 10,000 test patients (571 with sepsis) that no model trained on. Each point is a model trained on hospital A's 16,268 patients plus that many local ones. Each alert cutoff was set on the scored test patients themselves, at a 25% false alarm cap, the same way for every point. So this shows the shape of the curve. It is not a score to quote. The first 1,000 local patients close 52% of the gap between none (0.262) and 10,000 (0.385). A model trained on the 10,000 local patients alone, with no hospital A data, scored 0.399. One split, so small gaps are not settled."
+  },
   "prediction_box": "<b>Before running this, the prediction was:</b> the utility score goes down at hospital B, false alarms go above the 15% budget (low confidence), and the full model M3 loses more than the body-signals model M1 when it travels. Committed on Sat 11/14/2026 at 2:20 PM Phoenix time, before any model was trained (first commit in the repository).<br><br><b>What happened:</b> At hospital B, 109 of 1,142 sepsis patients (9.5%) got their first alert in the 12 hours before onset. Another 377 were alerted earlier than that, and 656 were missed. It raised a false alarm on 1,358 of 18,858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A). The official utility score fell from 0.368 at hospital A dev (the calibration set) to 0.238 at hospital B. A model that sees only hours in the unit scored 0.242 there."
 }

@@ -250,6 +250,38 @@ out["limits"] = "\n".join([
     "The data has no race, ethnicity, language or insurance fields, so those groups cannot be checked at all.",
 ])
 
+# after-the-fact: how much local data a new hospital needs (scripts/v2_local_data_curve.py).
+# Each arm trains on hospital A plus some hospital B patients and is scored on hospital B patients no arm trained on.
+curve_file = RESULTS / "after_the_fact_v2_local_data_curve.csv"
+if curve_file.exists():
+    curve = pd.read_csv(curve_file)
+    mixed = curve[curve.arm.str.startswith("hospital A +")].sort_values("train_patients")
+    alone = curve[~curve.arm.str.startswith("hospital A +")].iloc[0]
+    from_a = int(mixed.train_patients.iloc[0])                       # the arm with no local patients
+    points = [{"local": int(r.train_patients) - from_a, "utility": round(float(r.utility), 3)} for r in mixed.itertuples()]
+    none, most = points[0], points[-1]
+    at_1000 = next(pt for pt in points if pt["local"] == 1000)
+    share = (at_1000["utility"] - none["utility"]) / (most["utility"] - none["utility"])
+    closes = "half" if 0.45 <= share <= 0.55 else f"{100 * share:.0f}% of"
+    cap = round(100 * float(mixed.false_alarm_share.max()))
+    out["local_curve"] = {
+        "title": f"The first 1,000 local patients close {closes} the gap",
+        "points": points,
+        "alone": {"local": int(alone.train_patients), "utility": round(float(alone.utility), 3)},
+        "x_title": "Hospital B patients added to training",
+        "y_title": f"Utility on {n(mixed.patients.iloc[0])} hospital B test patients",
+        "caption": (
+            "After-the-fact: this was run after the hospital B result, so it is not part of the frozen test. "
+            f"Hospital B was cut once into {n(most['local'])} local patients to learn from and {n(mixed.patients.iloc[0])} test patients "
+            f"({n(mixed.sepsis_patients.iloc[0])} with sepsis) that no model trained on. Each point is a model trained on hospital A's "
+            f"{n(from_a)} patients plus that many local ones. Each alert cutoff was set on the scored test patients themselves, at a {cap}% "
+            "false alarm cap, the same way for every point. So this shows the shape of the curve. It is not a score to quote. "
+            f"The first 1,000 local patients close {100 * share:.0f}% of the gap between none ({none['utility']:.3f}) and "
+            f"{n(most['local'])} ({most['utility']:.3f}). A model trained on the {n(alone.train_patients)} local patients alone, with no "
+            f"hospital A data, scored {alone.utility:.3f}. One split, so small gaps are not settled."
+        ),
+    }
+
 decisions = (ROOT / "DECISIONS.md").read_text()
 happened = "Hospital B has not been run yet." if b is None else out["finding"]
 out["prediction_box"] = (

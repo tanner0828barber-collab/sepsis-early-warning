@@ -249,6 +249,11 @@ svg .mk-onset {{ stroke: {CHALK}; stroke-width: 2; }} svg .mk-onset-t {{ fill: {
 .barkey span {{ color: {FOG}; }}
 .barkey i {{ display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; }}
 .box {{ font-size: 16px; line-height: 1.55; max-width: 90ch; }}
+.tile.after {{ border-style: dashed; border-color: {RULE}; }}
+.tile.after h3 em {{ font-style: normal; background: rgba(246,184,75,.16); color: {AMBER}; border-radius: 6px; padding: 1px 8px; white-space: nowrap; }}
+.tile.after svg {{ width: 100%; height: auto; }}
+.tile.after .ytitle {{ margin: 0 0 4px; }} .tile.after svg + .caption {{ margin-top: 10px; max-width: 110ch; }}
+svg .value {{ fill: {CHALK}; font-size: 13px; font-weight: 600; }} svg .alonedot {{ fill: {TILE}; stroke: {FOG}; stroke-width: 2; }}
 
 /* the limits tab */
 .gradio-container .limits {{ background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 22px 26px; }}
@@ -653,6 +658,60 @@ def warning_chart():
     )
 
 
+def curve_chart(data, narrow=False):
+    """Utility at hospital B against the number of local patients added to training."""
+    width, left, right = (380, 40, 14) if narrow else (1100, 52, 24)
+    top, tall = 18, 220
+    plot, bottom = width - left - right, top + tall
+    points = [(pt["local"], pt["utility"]) for pt in data["points"]]       # (local patients added, utility)
+    alone_local, alone_utility = data["alone"]["local"], data["alone"]["utility"]
+    most = max(local for local, _ in points)
+    values = [utility for _, utility in points] + [alone_utility]
+    low, high = math.floor(min(values) * 20 - 0.4) / 20, math.ceil(max(values) * 20 + 0.2) / 20   # round out to steps of 0.05
+    x = lambda v: left + v / most * plot
+    y = lambda v: top + (high - v) / (high - low) * tall
+    parts = [f'<rect x="{left}" y="{top}" width="{plot}" height="{tall}" rx="8" class="lane"/>']
+    for i in range(round((high - low) * 20) + 1):
+        level = low + i / 20
+        parts.append(
+            f'<line x1="{left}" x2="{left + plot}" y1="{y(level):.1f}" y2="{y(level):.1f}" class="grid"/>'
+            f'<text x="{left - 6}" y="{y(level) + 4:.1f}" class="tick" text-anchor="end">{level:.2f}</text>'
+        )
+    line = " ".join(f"{x(local):.1f},{y(utility):.1f}" for local, utility in points)
+    parts.append(f'<polyline points="{line}" class="scoreline"/>')
+    for i, (local, utility) in enumerate(points):
+        at, up = x(local), y(utility)
+        named = not narrow or local in (0, 2000, 5000, most)      # on a phone the first labels would sit on each other
+        last = i == len(points) - 1
+        parts.append(f'<circle cx="{at:.1f}" cy="{up:.1f}" r="4.6" class="nowdot"><title>{local:,} local patients: utility {utility:.3f}</title></circle>')
+        if named:
+            side = "end" if last else "middle"
+            parts.append(f'<text x="{at:.1f}" y="{bottom + 17}" class="tick" text-anchor="{side}">{local:,}</text>')
+        if named or local == 1000:
+            anchor, shift, drop = ("end", -2, 22) if last else ("start", 8, 16) if i < 3 else ("middle", 0, -12)
+            parts.append(f'<text x="{at + shift:.1f}" y="{up + drop:.1f}" class="value halo" text-anchor="{anchor}">{utility:.3f}</text>')
+    at, up = x(alone_local), y(alone_utility)
+    words = "local patients only" if narrow else "local patients only, no hospital A"
+    parts.append(f'<circle cx="{at:.1f}" cy="{up:.1f}" r="5" class="alonedot"/>')
+    parts.append(f'<text x="{at - 10:.1f}" y="{up - 8:.1f}" class="tick halo" text-anchor="end">{words}: {alone_utility:.3f}</text>')
+    x_title, y_title = data["x_title"], data["y_title"]
+    parts.append(f'<text x="{left + plot}" y="{bottom + 36}" class="tick" text-anchor="end">{x_title}</text>')
+    spoken = ". ".join(f"{local:,} local patients: {utility:.3f}" for local, utility in points)
+    label = f"{y_title}. {spoken}. {alone_local:,} local patients alone: {alone_utility:.3f}."
+    return f'<svg class="{"narrow" if narrow else "wide"}" viewBox="0 0 {width} {bottom + 44}" role="img" aria-label="{label}">{"".join(parts)}</svg>'
+
+
+def curve_tile():
+    data = SCOREBOARD.get("local_curve")
+    if not data:
+        return ""
+    return (
+        '<section class="tile wide12 after"><h3><em>After-the-fact</em>How much local data does a new hospital need?</h3>'
+        f'<div class="charttitle display">{data["title"]}</div><p class="caption ytitle">{data["y_title"]}</p>'
+        f'{curve_chart(data)}{curve_chart(data, narrow=True)}<p class="caption">{data["caption"]}</p></section>'
+    )
+
+
 def travel_tab():
     tiles = [
         f'<section class="tile wide12"><div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
@@ -664,6 +723,7 @@ def travel_tab():
             f'<section class="tile wide12"><h3>Attempts to make it travel better</h3>{html_table(SCOREBOARD["travel_attempts"], many=True)}</section>'
         )
     tiles.append(warning_chart())
+    tiles.append(curve_tile())
     tiles.append(f'<section class="tile wide12"><h3>Prediction against result</h3><div class="box">{SCOREBOARD["prediction_box"]}</div></section>')
     return f'<div class="grid12">{"".join(tiles)}</div>'
 
