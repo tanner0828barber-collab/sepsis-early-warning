@@ -198,6 +198,17 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Baseline on the same patients and folds: the both-hospitals model at hospital B (utility 0.406, 80.7% alerted by onset, 220 of 1,142 missed), read back from its saved scores.
   - Keep rule: at least 1.5 points more alerted by onset (82.2% or more, 203 or fewer missed) and utility not below 0.396. If it is met, the best model for hospital B is its own. If not, the both-hospitals model stays the best version 2 model.
   - Claude's guess, logged in advance: utility 0.40 to 0.42 at hospital B, a gain too small to meet the keep rule. About a one in four chance it passes.
+- Sat 11/14, 5:22 PM. RESULT of the hospital B only model (results/after_the_fact_v2_local_only.csv). Nested, 25% cap, same outer folds. The both-hospitals baseline was read back from its saved scores and reproduced exactly (0.406, 80.7%, 220 missed).
+
+  | Hospital B, all 20,000 patients, 25% cap | Utility | Timely | Alerted by onset | Missed | False alarms |
+  |---|---|---|---|---|---|
+  | Both-hospitals model | 0.406 | 364 of 1,142 | 80.7% | 220 | 4,755 of 18,858 (25.2%) |
+  | Hospital B only model | 0.394 | 359 of 1,142 | 80.6% | 221 | 5,041 of 18,858 (26.7%) |
+
+  - Keep rule: NOT met. Alerted by onset moved by minus 0.1 points and utility fell by 0.012. The both-hospitals model stays the best version 2 model: 0.402 at hospital A and 0.406 at hospital B.
+  - The surprise in the curve did not survive the proper test. In the curve, the local-only arm beat the mixed arm on one test set with the cutoff set on the scored patients. Nested, on all of hospital B, the mixed model is level on catches and a little ahead on utility. This is why the cutoff is set on other patients before a result is believed.
+  - Read together with the both-hospitals result: hospital B's data did not help hospital A, and hospital A's data helps hospital B a little or not at all. What a hospital mostly needs is its own labeled patients.
+  - Guess against result: utility guessed at 0.40 to 0.42 (wrong, lower: 0.394). Guessed it would not meet the keep rule (right).
 
 ## Why no new outside data
 

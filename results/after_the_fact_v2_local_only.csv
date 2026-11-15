@@ -1,0 +1,3 @@
+model,utility,patients,sepsis_patients,caught,very_early,missed,missed_but_alerted_after_onset,alerted_by_onset_share,caught_share,non_sepsis_patients,false_alarms,false_alarm_share,false_alerts_per_true_alert,median_hours_of_warning,alerts_per_1000_patient_days,repeat_alerts_per_alerted_patient
+"both-hospitals model, scored at hospital B",0.4057951375049822,20000,1142,364,558,220,33,0.8073555166374781,0.318739054290718,18858,4755,0.2521476296531976,5.157266811279826,26.0,345.7660483336505,0.9225919439579685
+hospital B only model,0.39388570377410564,20000,1142,359,562,221,30,0.8064798598949212,0.31436077057793343,18858,5041,0.26731360695725953,5.473398479913138,25.0,367.4984743994383,0.9472630173564753
