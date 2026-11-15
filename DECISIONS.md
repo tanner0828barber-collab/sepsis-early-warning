@@ -214,6 +214,23 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Paired differences, resampling the same patients for both models: both-hospitals against hospital A only on hospital A patients; hospital B only against both-hospitals on hospital B patients; hospital B's burn-in alert line against hospital A's unchanged cutoff on the 18,000.
   - To pair the hospital B only model, its script is rerun unchanged except that it now also saves which hours it alerted on. It is seeded, so it must reproduce 0.394 and 221 missed exactly. If it does not, that is reported.
   - How a range will be read: if a difference's 95% range includes zero, the two models are not told apart by this data, and the write-up may not call one better.
+- Sat 11/14, 5:48 PM. RESULT: 95% ranges for the version 2 numbers (results/after_the_fact_v2_ranges.csv). Patients resampled 1,000 times, seed 2026. The hospital B only script was rerun to save its alert hours and reproduced its first run exactly.
+
+  | 25% cap | Utility | Timely | Alerted by onset | False alarms |
+  |---|---|---|---|---|
+  | Both-hospitals model, hospital A | 0.402 (0.381 to 0.422) | 20.6% (18.7 to 22.7) | 72.1% (69.8 to 74.4) | 25.4% (24.7 to 26.1) |
+  | Both-hospitals model, hospital B | 0.406 (0.383 to 0.429) | 31.9% (29.1 to 34.6) | 80.7% (78.4 to 82.9) | 25.2% (24.6 to 25.8) |
+  | Both-hospitals model, both together | 0.403 (0.388 to 0.418) | 25.6% (23.9 to 27.4) | 76.0% (74.3 to 77.6) | 25.3% (24.8 to 25.8) |
+  | Hospital A only model, hospital A | 0.399 (0.378 to 0.420) | 21.2% (19.2 to 23.4) | 72.7% (70.5 to 74.9) | 25.7% (25.0 to 26.5) |
+  | Hospital B only model, hospital B | 0.394 (0.371 to 0.418) | 31.4% (28.8 to 34.0) | 80.6% (78.4 to 82.8) | 26.7% (26.1 to 27.3) |
+  | Frozen model at B (18,000), hospital A's cutoff | 0.265 (0.240 to 0.289) | 13.9% (11.7 to 15.9) | 52.7% (49.7 to 55.7) | 15.2% (14.7 to 15.8) |
+  | Frozen model at B (18,000), its own burn-in line | 0.271 (0.244 to 0.296) | 16.7% (14.3 to 19.0) | 62.6% (59.6 to 65.4) | 28.0% (27.3 to 28.7) |
+
+  Paired differences (the same patients redrawn for both models):
+  - Both-hospitals minus hospital A only, at hospital A: utility +0.002 (-0.007 to +0.011), alerted by onset -0.6 points (-2.2 to +0.9). Both ranges include zero. At hospital A the two models cannot be told apart.
+  - Hospital B only minus both-hospitals, at hospital B: utility -0.012 (-0.023 to -0.000), alerted by onset -0.1 points (-1.9 to +1.7), false alarms +1.5 points (+1.0 to +2.1). On catches they cannot be told apart. On utility the both-hospitals model is ahead by a hair, with a range that reaches zero at its edge, so the honest wording is "about the same, slightly favoring both hospitals."
+  - Hospital B's own burn-in line minus hospital A's cutoff, frozen model: utility +0.006 (-0.003 to +0.015) (includes zero), alerted by onset +9.9 points (+8.0 to +11.6), false alarms +12.7 points (+12.3 to +13.3). So moving the line clearly buys catches and clearly costs false alarms, and does not clearly change utility.
+  - What the ranges allow us to say: the both-hospitals model scores about 0.40 at each hospital, give or take 0.02. What they do not allow: calling the both-hospitals model better than a hospital's own model.
 - Sat 11/14, 5:43 PM. PLAN, written before running: train on a utility-shaped target (script scripts/v2_utility_target.py). After-the-fact, hospital A only. This is the last idea aimed at the model's ranking that has outside evidence behind it: the literature review says the challenge winner trained on it (Claude has not opened that paper).
   - What changes: today the model learns a yes or no label. Here it learns a number for every hour: how much the official score gains if the model alerts at that hour compared with staying silent. That number is minus 0.05 for any hour of a patient who never develops sepsis and for hours more than 12 hours before onset, climbs from 0 to 1 across the 12 to 6 hours before onset, and climbs on to 2 by 3 hours after onset. It is worked out from the organizers' own scoring rules, and the script checks it against their scoring function before training.
   - How it differs from the two target ideas that already failed: those kept a yes or no label and only moved or re-counted which hours were yes. This one is a graded number learned by regression, so an hour near onset is worth more than an hour 11 hours before it.
