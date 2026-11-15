@@ -273,6 +273,16 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Guess against result: the time-only model guessed at 425 (right). The modified SIRS rule guessed above 800 (right: 885).
   - Where it is reported: the write-up and the README. Not yet in the app or the notebook.
 
+## The unit board (a second screen in the app, no model change)
+
+- Sat 11/14, 6:52 PM. PLAN, written before any patient was picked: a "Unit board" tab in the app (code in app/unit_board.py, patients picked by scripts/build_unit_board.py). Why: my user is a nurse deciding which patient to look at first, and the Replay shows one patient at a time. The board shows 12 hospital B patients at the same hour of their stay, ranked by the frozen model's score, highest first.
+  - No model, threshold or result changes. It uses the same frozen model and the same frozen alert line as the Replay. It is a display, not a result, and no number from it is reported as a result.
+  - Patients are picked by rule and not by eye: one seeded random draw (seed 2026) from all 20,000 hospital B patients, 9 who never develop sepsis and 3 who do. The draw never reads the model's scores or outcomes, so nobody chose patients the model does well or badly on. Whatever the draw gives stays, including if the model misses all three.
+  - Disclosed on the screen: 3 of 12 is far more sepsis than the real share at hospital B (1,142 of 20,000, about 1 in 18). Sepsis patients were added on purpose so the board has something to find. The 12 patients were not in the unit together: the board lines their records up by hour in the unit. Bed numbers are made up and come from the same seeded shuffle, so a bed number says nothing about the patient.
+  - What happened to each patient stays hidden until the board's hour reaches it, the same rule as the Replay.
+  - Words on the screen: "Over the line" is a score at or above the frozen alert line, "Near the line" is half the line or more, "Below the line" is anything lower. Half is a display choice, not a clinical standard and not a second alert line.
+  - Choices Claude made to keep moving, which Tanner can overrule: 12 beds, the 9 and 3 mix, the "near" level at half the line, the board opening at hour 12, and the board being the first tab.
+
 ## Why no new outside data
 
 The other open intensive care datasets either need a credentialed application that takes days, or have no ready-made hourly sepsis label. Building that label ourselves is days of careful work and easy to get wrong. A third hospital is listed as future work.
