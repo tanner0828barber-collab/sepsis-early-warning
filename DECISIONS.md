@@ -349,5 +349,3 @@ What I did not predict:
 - The modified SIRS rule at B: alerted by onset on 966 of 1,142, false alarms on 12,630 of 18,858 (67%), utility -0.014.
 
 Why prediction 2 was wrong (written Sat 11/14, 4:35 PM). What was measured, without using sepsis labels: the frozen model gave hospital B patients lower scores across the board, so the frozen alert line was crossed less often, by patients without sepsis (7.2% against 15.0%) and by sepsis patients as well (43% alerted by onset against 62%). Two differences in the recorded data go with that: hospital B records 0.94 lab values per patient-hour against 1.64 at hospital A, and its blood pressures read higher (mean arterial pressure 86.5 against 78.6). These are associations. I did not run a test that proves either one is the cause. The prediction assumed ordinary hospital B patients might look sicker to a model raised on hospital A. They looked healthier.
-
-Tanner's own read of the five failures: to be added in his words.
