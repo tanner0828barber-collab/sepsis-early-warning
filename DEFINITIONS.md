@@ -7,7 +7,7 @@ Fixed Sat 11/14/2026, before any code. Every number in this project uses these m
 - **Hour:** one row of a patient's record. The data has one row per hour in the intensive care unit.
 - **Label start:** the first hour a patient's sepsis label is 1.
 - **Onset:** the challenge's defined sepsis time. The challenge switched the label on six hours before it, so onset = label start + 6 hours, when the record goes back that far.
-- **Late-entry cases:** patients whose label is already on in their first row. They have no pre-label history in the record. They are reported separately, and their warning time is computed where it can be computed. We do not say an alert is "impossible" for them.
+- **Late-entry cases:** patients whose label is already on in their first row. They have no pre-label history in the record. They are reported separately, and their warning time is computed where it can be computed. I do not say an alert is "impossible" for them.
 
 ## Alerts
 
@@ -16,7 +16,7 @@ Fixed Sat 11/14/2026, before any code. Every number in this project uses these m
 - **Alert budget:** at most 15% of hospital A dev patients who never develop sepsis are ever alerted.
 - **Alert:** the first hour a patient's score crosses the frozen threshold.
 - **Repeat alerts:** later separate crossings for the same patient.
-- **Hours of warning:** onset minus the first alert hour. We report the whole distribution, not only "caught before onset."
+- **Hours of warning:** onset minus the first alert hour. I report the whole distribution, not only "caught before onset."
 
 ## Outcomes, counted per patient
 
@@ -31,7 +31,7 @@ Missed cases and false alarms are always reported separately, never folded into 
 
 - A lab value appearing in a window is a sign that something was measured. It is not proof a test was ordered at that moment or that a clinician suspected sepsis.
 - The tool is a retrospective risk-prioritization demo. It never says a patient has or does not have sepsis.
-- Our hospital A to hospital B test is not the challenge's hidden hospital C test. Our numbers are not comparable to the challenge leaderboard.
+- My hospital A to hospital B test is not the challenge's hidden hospital C test. My numbers are not comparable to the challenge leaderboard.
 
 ## Disclosure: hospital B is not a blind test
 

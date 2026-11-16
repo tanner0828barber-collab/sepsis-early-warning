@@ -22,7 +22,7 @@ Written Sat 11/14/2026, before any code or model. Veritas AI International High 
 
 **Main method:** gradient boosting that accepts empty cells directly, trained on hospital A only. Four planned versions with the same settings:
 
-| Name | Inputs | What it tells us |
+| Name | Inputs | What it tells me |
 |---|---|---|
 | T0 | Hours in the unit only | How much is just "sepsis tends to show up later in a stay" |
 | M1 | Physiology and trends | The body's signals |

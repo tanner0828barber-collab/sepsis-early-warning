@@ -30,7 +30,7 @@ md("""
 
 Veritas AI International High School Hackathon, Health track. Solo entry by Tanner Barber.
 
-**The question.** Can a sepsis early warning model trained at one hospital travel to another? We train on public intensive care data from hospital A, freeze the model and the alert threshold, and evaluate once on hospital B.
+**The question.** Can a sepsis early warning model trained at one hospital travel to another? I train on public intensive care data from hospital A, freeze the model and the alert threshold, and evaluate once on hospital B.
 
 **The user.** An intensive care nurse deciding which patient to look at first.
 
@@ -93,12 +93,12 @@ print(empty.to_string())
 """)
 
 md("""
-**What we found by reading raw rows.**
+**What I found by reading raw rows.**
 - Vital signs are empty in roughly 8% to 15% of hours (temperature 66%). Lab values are empty in 86% to 99.9% of hours. A value being present is itself a signal that something was measured.
 - End-tidal CO2 is empty in 100% of hospital A rows, so it is dropped.
 - Every sepsis patient has between 6 and 10 positive rows: records stop a few hours after onset.
 
-**Why accuracy is the wrong score here.** About 2% of rows are positive, so a model that never alerts is about 98% accurate and catches nobody. We count per patient instead: caught, missed, and false alarms, reported separately. The exact meanings are in `DEFINITIONS.md`.
+**Why accuracy is the wrong score here.** About 2% of rows are positive, so a model that never alerts is about 98% accurate and catches nobody. I count per patient instead: caught, missed, and false alarms, reported separately. The exact meanings are in `DEFINITIONS.md`.
 
 ## 2. Three piles of patients
 
@@ -142,7 +142,7 @@ features[["pid", "ICULOS", "last_HR", "change6_HR", "mean6_HR", "hours_since_WBC
 
 code("""
 # The no-peeking check, on real patients: cut 200 records short and rebuild.
-# The inputs for the hours we kept must come out exactly the same.
+# The inputs for the hours I kept must come out exactly the same.
 some = a[a.pid.isin(a.pid.unique()[:200])]
 position = some.groupby("pid", sort=False).cumcount()
 kept = position < 12
@@ -190,7 +190,7 @@ search.sort_values("alerted_by_onset", ascending=False).head(8).round(4)
 """)
 
 code("""
-# The first model on hospital A dev. This was our first look at dev.
+# The first model on hospital A dev. This was my first look at dev.
 first = json.loads((ROOT / "results" / "first_model_a_dev_results.json").read_text())
 show = ["caught", "very_early", "missed", "false_alarms", "alerted_by_onset_share", "false_alarm_share", "median_hours_of_warning", "utility", "hourly_auroc"]
 order = ["Never alert", "Modified SIRS", "T0", "M1", "M2", "M3"]
@@ -205,7 +205,7 @@ md("""
 
 ## 6. The improvement round
 
-Before freezing, we tried to make the model better. The plan and the keep rule were committed first (see `DECISIONS.md`):
+Before freezing, I tried to make the model better. The plan and the keep rule were committed first (see `DECISIONS.md`):
 
 - Every choice is made by 3-fold cross-validation over the fit and tune patients together, split by patient. Dev is not used to choose anything.
 - A change is kept only if it adds at least 1.5 points of sepsis patients alerted by onset at the 15% budget, and does not lower the utility score by more than 0.01.
@@ -401,9 +401,9 @@ md("""
 ## 11. What this does and does not show
 
 - **Site-held-out, not blind.** See the disclosure in section 8. A truly unseen hospital is future work.
-- **Not comparable to the challenge leaderboard.** The challenge scored teams on hidden patients, including a third hospital that was never released. Our test is hospital A to hospital B on public data.
+- **Not comparable to the challenge leaderboard.** The challenge scored teams on hidden patients, including a third hospital that was never released. My test is hospital A to hospital B on public data.
 - **Time in the unit explains a lot.** Compare T0 with M1 above. Part of what looks like skill is the shape of this dataset.
-- **Very early alerts are not the same as catches.** We report them separately.
+- **Very early alerts are not the same as catches.** I report them separately.
 - **The label depends on staff behavior.** It is built partly from when antibiotics were ordered and cultures drawn.
 - **Scores are model scores, not probabilities.** Calibration was not checked.
 - **Hospital A dev numbers are calibration numbers.** The alert line was set on those patients, so the 15.0% false alarm share at hospital A dev is true by construction, not a measured result.
