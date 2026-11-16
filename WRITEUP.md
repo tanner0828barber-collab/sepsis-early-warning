@@ -44,7 +44,7 @@ Utility is the challenge's official score (1 is perfect, never alerting is 0). "
 - **Quiet.** At a hospital it had never seen: 1,358 false alarms against the SIRS checklist's 12,630. The checklist scored below never alerting.
 - **Still finds patients.** 486 of 1,142 flagged by onset at hospital B, with an hourly AUROC of 0.78.
 - **Holds up next to a commercial alarm.** Epic's model in its outside check: AUC 0.63, 67% missed, 18% alerted. Mine: 57% missed, 7.2% false alarms. Different patients and definitions, so this is context, not a head to head test.
-- **Gets much stronger with local data.** Trained on both hospitals after the frozen run, it scored 0.402 and 0.406 and flagged 922 of 1,142 by onset at hospital B, at 25.2% false alarms. After-the-fact, so not a test of travel.
+- **Gets much stronger with local data.** Trained on both hospitals after the frozen run, it scored 0.402 at A and 0.406 at B, and flagged 922 of 1,142 by onset at B with 25.2% false alarms. After-the-fact, so not a test of travel.
 
 **What it is not good at yet.** Only 109 first alerts landed in the final 12 hours, and 656 patients were missed. At hospital B it did not beat the hours-only model. First-day sepsis is the weak spot: 11% flagged by onset (57 of 514) against 68% later (429 of 628). Patients 80 and over did worst (36%, against 40% to 47% for younger groups). Women 42%, men 43%. The data has no race or ethnicity field.
 

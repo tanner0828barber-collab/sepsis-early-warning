@@ -28,7 +28,7 @@ Of the 18,858 patients who never developed sepsis, **1,358 (7.2%) got a false al
 
 ### What it is good at
 
-- **It is quiet.** At a hospital it had never seen, it raised 1,358 false alarms where SIRS, the classic bedside sepsis checklist, raised 12,630. That is 9 times fewer. The rule scored below never alerting (-0.014). My model scored 0.238.
+- **It is quiet.** At a hospital it had never seen, it raised 1,358 false alarms where SIRS, the classic bedside sepsis checklist, raised 12,630. That is 9 times fewer. The checklist scored below never alerting (-0.014). My model scored 0.238.
 - **It still finds patients after the move.** It flagged 486 of 1,142 sepsis patients by onset at hospital B, with an hourly AUROC of 0.78.
 - **It holds up next to a commercial alarm.** When the widely used Epic Sepsis Model was checked at an outside hospital, it had an AUC of 0.63, missed 67% of sepsis patients, and alerted on 18% of all hospitalized patients ([Wong et al., 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8218233/)). Mine missed 57% with false alarms on 7.2%. Those are different patients, different sepsis definitions, and a different kind of AUC, so this is context and not a head to head test.
 - **It gets much stronger with local data.** After the frozen run, one model trained on both hospitals scored 0.402 at hospital A and 0.406 at hospital B, and flagged 922 of 1,142 sepsis patients by onset at hospital B with 25.2% false alarms. This run is after-the-fact and has seen hospital B, so it is not a test of whether a model travels.
@@ -61,11 +61,11 @@ Each method is one step up from the last, so each row shows what the next one ad
 
 | Method | Utility, A dev | Utility, B (95% range) | Timely at B | Missed at B | False alarms at B |
 |---|---|---|---|---|---|
-| Modified SIRS bedside rule | 0.090 | -0.014 (-0.051 to 0.023) | 306 of 1,142 | 176 | 12,630 of 18,858 (67.0%) |
+| SIRS checklist (modified) | 0.090 | -0.014 (-0.051 to 0.023) | 306 of 1,142 | 176 | 12,630 of 18,858 (67.0%) |
 | Hours in the unit only | 0.312 | 0.242 (0.217 to 0.268) | 79 of 1,142 | 717 | 2,581 of 18,858 (13.7%) |
 | **Full model** (gradient boosting, 100 inputs) | **0.368** | **0.238** (0.214 to 0.262) | **109 of 1,142** | **656** | **1,358 of 18,858 (7.2%)** |
 
-Utility is the challenge's official score. 1 is perfect and never alerting scores 0.
+Utility is the challenge's official score. 1 is perfect and never alerting scores 0. SIRS is the classic bedside sepsis checklist: it fires when two or more of heart rate, temperature, breathing rate and white cell count are out of range. Mine is "modified" because this data does not record one of its inputs (immature white cells).
 
 The full model at both hospitals, side by side:
 
@@ -85,13 +85,13 @@ The alert line was set on hospital A dev, so its 15.0% false alarm share is true
 - **Timely catches were rare.** 109 of 1,142 at hospital B. I count an alert more than 12 hours before onset separately and never call it a catch.
 - **The model got quieter, not noisier.** Hospital B records 0.94 lab values per patient-hour against 1.64 at hospital A, and its blood pressures read higher, so the model scored everyone lower there. I had predicted the opposite.
 - **Time in the unit explains a lot.** At hospital B the full model did not beat a model that only knows the hour.
-- **The bedside rule catches more and costs far more.** Modified SIRS alerted by onset on 966 of 1,142 sepsis patients at hospital B, and raised a false alarm on 67% of everyone else.
+- **The SIRS checklist catches more and costs far more.** It alerted by onset on 966 of 1,142 sepsis patients at hospital B, and raised a false alarm on 67% of everyone else.
 - **A second way to count, added after the frozen run.** 452 of 1,142 had the alert on at some hour in the 12 hours before onset, because 343 of the 377 "very early" patients were still alerting. The time-only model has 425 by the same count, so this does not change the finding. Numbers: `results/after_the_fact_alert_on_in_window.csv`.
 
 ### Where it fails
 
 - **First-day sepsis.** When the sepsis label starts before hour 24, 57 of 514 patients were alerted by onset (11%), against 429 of 628 later in the stay (68%).
-- **Late-entry patients, whose sepsis label is already on in their first recorded hour.** 14 of 223 caught. The SIRS rule caught 150 of the same 223.
+- **Late-entry patients, whose sepsis label is already on in their first recorded hour.** 14 of 223 caught. The SIRS checklist caught 150 of the same 223.
 - **Patients aged 80 and over.** 46 of 129 alerted by onset (36%), the worst age group. Under 50: 42%. 50 to 64: 40%. 65 to 79: 47%.
 - **Women and men were close.** Alerted by onset: women 210 of 495 (42%), men 276 of 647 (43%). False alarms: women 6.2%, men 8.1%.
 
