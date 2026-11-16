@@ -107,6 +107,32 @@ two["caption"] = (
 )
 out["two_hospitals"] = two
 
+# The result strip at the top of every tab, and one mark per sepsis patient for the dot picture.
+# Same frozen numbers as the table above, nothing new is computed here.
+if b is not None:
+    sepsis_b, sepsis_a = main["sepsis_patients"], main_a["sepsis_patients"]
+    out["strip"] = [
+        {"big": f'{n(main["caught"])} of {n(sepsis_b)}', "what": "sepsis patients got a timely alert, in the 12 hours before onset"},
+        {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients were missed: no alert by onset"},
+        {"big": f'{n(main["false_alarms"])} of {n(main["non_sepsis_patients"])}',
+         "what": f'patients who never developed sepsis got a false alarm ({pct(main["false_alarm_share"])})'},
+    ]
+    out["dots"] = {
+        "title": (
+            f'Missed sepsis patients: {pct(main_a["missed"] / sepsis_a, 0)} at home, '
+            f'{pct(main["missed"] / sepsis_b, 0)} at a second hospital'
+        ),
+        "sites": [
+            {"name": name, "sepsis": int(x["sepsis_patients"]), "timely": int(x["caught"]), "very_early": int(x["very_early"]), "missed": int(x["missed"])}
+            for name, x in [("Hospital A dev (the calibration set, at home)", main_a), ("Hospital B (never trained on)", main)]
+        ],
+        "caption": (
+            "One mark per sepsis patient. Trained at hospital A, frozen, then scored once at hospital B. Timely means the first alert came in "
+            "the 12 hours before onset. Very early means more than 12 hours before onset. Missed means no alert by onset. "
+            "Source: the frozen result files, the same numbers as the table below."
+        ),
+    }
+
 # every planned model and both comparators
 names = [
     ("Never alert", "Never alert"),

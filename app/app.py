@@ -303,6 +303,26 @@ CSS += f"""
 @media (max-width: 600px) {{ .scorehead b.level {{ font-size: 30px; }} }}
 """
 
+# the promise under the title, the result strip above the tabs, and the dot picture on the travel tab
+CSS += f"""
+.promise {{ margin: 8px 0 0; font-size: 18px; line-height: 1.45; color: {CHALK}; max-width: 70ch; }}
+.promise span {{ color: {FOG}; }}
+.strip {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 14px 20px 16px; margin-top: 4px; }}
+.strip .where {{ grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: {FOG}; }}
+.strip b {{ display: block; font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; color: {CHALK}; font-variant-numeric: tabular-nums; }}
+.strip .miss b {{ color: {AMBER}; }}
+.strip span.what {{ display: block; font-size: 14px; line-height: 1.4; color: {FOG}; margin-top: 2px; }}
+.dotsite {{ margin-top: 14px; }}
+.dotsite .dotname {{ font-size: 15px; font-weight: 600; color: {CHALK}; margin-bottom: 6px; }}
+.dotsite .dotname span {{ color: {FOG}; font-weight: 400; }}
+.dotsite svg {{ display: block; width: 100%; height: auto; }}
+.dotkey {{ display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 15px; margin: 8px 0 0; color: {CHALK}; }}
+.dotkey svg {{ display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 7px; }}
+.dotkey b {{ font-variant-numeric: tabular-nums; }}
+.dots .caption {{ margin-top: 14px; max-width: 110ch; }}
+@media (max-width: 700px) {{ .strip {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} }}
+"""
+
 # The page is drawn dark whatever the visitor's system setting is.
 FORCE_DARK = "() => { document.body.classList.add('dark'); document.documentElement.style.colorScheme = 'dark'; }"
 
@@ -763,8 +783,63 @@ def curve_tile():
     )
 
 
+def result_strip():
+    """Three frozen hospital B numbers, each with its denominator, shown above the tabs on every tab."""
+    numbers = SCOREBOARD.get("strip")
+    if not numbers:
+        return ""
+    cells = "".join(
+        f'<div class="{"miss" if i == 1 else "num"}"><b class="display">{item["big"]}</b><span class="what">{item["what"]}</span></div>'
+        for i, item in enumerate(numbers)
+    )
+    return f'<div class="strip"><span class="where">The result: trained at hospital A, frozen, then tested once at hospital B</span>{cells}</div>'
+
+
+# The three outcomes for a sepsis patient. Each has its own mark as well as its own color.
+DOT_MARKS = {
+    "timely": ("timely", f'<circle cx="{{x}}" cy="{{y}}" r="3.3" fill="{CHALK}"/>'),
+    "very_early": ("very early", '<circle cx="{x}" cy="{y}" r="3.3" fill="#56616F"/>'),
+    "missed": ("missed", f'<circle cx="{{x}}" cy="{{y}}" r="2.6" fill="none" stroke="{AMBER}" stroke-width="1.5"/>'),
+}
+
+
+def dot_picture():
+    """One mark per sepsis patient at each hospital, grouped by outcome: timely, very early, missed.
+
+    Marks fill top to bottom, then left to right, 10 to a column, so each group is a block whose width is its share.
+    Both hospitals use the same mark size, so the shorter band is the smaller group of patients.
+    """
+    data = SCOREBOARD.get("dots")
+    if not data:
+        return ""
+    deep, pitch, width = 10, 9.5, 1100
+    sites = []
+    for site in data["sites"]:
+        marks, at = [], 0
+        for key, (_, mark) in DOT_MARKS.items():
+            for _ in range(site[key]):
+                marks.append(mark.format(x=f"{5 + (at // deep) * pitch:.1f}", y=f"{5 + (at % deep) * pitch:.1f}"))
+                at += 1
+        counts = ", ".join(f"{site[key]:,} {word}" for key, (word, _) in DOT_MARKS.items())
+        key_line = "".join(
+            f'<span><svg viewBox="0 0 10 10" aria-hidden="true">{mark.format(x=5, y=5)}</svg><b>{site[key]:,}</b> {word} '
+            f'({100 * site[key] / site["sepsis"]:.1f}%)</span>'
+            for key, (word, mark) in DOT_MARKS.items()
+        )
+        sites.append(
+            f'<div class="dotsite"><div class="dotname">{site["name"]} <span>{site["sepsis"]:,} sepsis patients</span></div>'
+            f'<svg viewBox="0 0 {width} {deep * pitch + 1:.0f}" role="img" aria-label="{site["name"]}: {counts}.">{"".join(marks)}</svg>'
+            f'<div class="dotkey">{key_line}</div></div>'
+        )
+    return (
+        f'<section class="tile wide12 dots"><h3>The result in one picture</h3><div class="charttitle display">{data["title"]}</div>'
+        f'{"".join(sites)}<p class="caption">{data["caption"]}</p></section>'
+    )
+
+
 def travel_tab():
     tiles = [
+        dot_picture(),
         f'<section class="tile wide12"><div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
         f'<section class="tile wide12"><h3>The full model at both hospitals</h3>{html_table(SCOREBOARD["two_hospitals"])}</section>',
         f'<section class="tile wide12"><h3>All planned models and both comparators</h3>{html_table(SCOREBOARD["models"], many=True)}</section>',
@@ -780,16 +855,40 @@ def travel_tab():
 
 
 # ---------------------------------------------------------------- the page
-START = CASES["cases"][0]["pid"]            # the page opens on the first saved patient, at its first hour
+LEAD_IN = 8   # hours; my own choice for this display
+
+
+def opening_hour(pid):
+    """The hour a saved patient opens at: a few hours before the model's first alert, so the tiles are not empty.
+
+    The hour comes from what the model did, never from the sepsis label. A patient the model never alerts on
+    opens at the first recorded hour, and so does one where that rule would open at or after onset, because
+    the outcome must stay hidden until the replay gets there. The slider still reaches hour 1.
+    """
+    first, last = hours_of(pid)
+    whole = moment(pid, last)
+    if whole.first_alert is None:
+        return first
+    at = max(first, whole.first_alert - LEAD_IN)
+    return first if whole.sepsis and at >= whole.onset else at
+
+
+START = CASES["cases"][0]["pid"]            # the page opens on the first saved patient
 START_FIRST, START_LAST = hours_of(START)
+START_AT = opening_hour(START)
 
 with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analytics_enabled=False, title="Sepsis Early Warning: does it travel?") as demo:
     gr.HTML(
         '<div class="topline"><span class="name display">Sepsis Early Warning</span>'
         '<span class="tag">Research prototype. Not medical advice.</span></div>'
+        '<p class="promise">For an intensive care nurse deciding which patient to look at first. '
+        '<span>My question: does a sepsis alarm trained at one hospital still work at a second one? '
+        'Press Play to watch one patient hour by hour.</span></p>'
     )
     if CASES["source"] != "B":
         gr.HTML('<div class="preview">Development preview: these patients and numbers are from hospital A dev, not hospital B.</div>')
+    else:
+        gr.HTML(result_strip())
 
     with gr.Tabs() as tabs:
         with gr.Tab("Replay", id="replay"):
@@ -807,17 +906,18 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                     gr.HTML("", elem_classes="spacer")
                     play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
                     step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
-                hour = gr.Slider(START_FIRST, START_LAST, value=START_FIRST, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
+                hour = gr.Slider(START_FIRST, START_LAST, value=START_AT, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
                 rules = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
                 gr.HTML(f'<p class="caption">Four saved patients from {SITE}. Chosen by rule, not by eye: {rules}.</p>')
             timer = gr.Timer(0.7, active=False)
 
-            board = gr.HTML(show(START, START_FIRST))
+            board = gr.HTML(show(START, START_AT))
 
             def choose(pid):
                 first, last = hours_of(pid)
+                at = opening_hour(pid)
                 chosen = [gr.Button(variant="primary" if case["pid"] == pid else "secondary") for case in CASES["cases"]]
-                return [pid, gr.Slider(minimum=first, maximum=last, value=first), show(pid, first), gr.Timer(active=False), "Play", *chosen]
+                return [pid, gr.Slider(minimum=first, maximum=last, value=at), show(pid, at), gr.Timer(active=False), "Play", *chosen]
 
             for button, case in zip(pills, CASES["cases"]):
                 button.click(

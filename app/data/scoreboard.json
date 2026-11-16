@@ -51,6 +51,40 @@
     ],
     "caption": "The threshold was set once on hospital A dev at a 15% alert budget and never changed. That makes hospital A dev the calibration set: its 15% false alarm share is true by construction, not a measured result. Gray ranges are 95% ranges from a bootstrap that resamples patients 1,000 times. Hospital A dev is 4,068 patients the model did not train on. Hospital B is 20,000 patients from a different hospital, scored once."
   },
+  "strip": [
+    {
+      "big": "109 of 1,142",
+      "what": "sepsis patients got a timely alert, in the 12 hours before onset"
+    },
+    {
+      "big": "656 of 1,142",
+      "what": "sepsis patients were missed: no alert by onset"
+    },
+    {
+      "big": "1,358 of 18,858",
+      "what": "patients who never developed sepsis got a false alarm (7.2%)"
+    }
+  ],
+  "dots": {
+    "title": "Missed sepsis patients: 38% at home, 57% at a second hospital",
+    "sites": [
+      {
+        "name": "Hospital A dev (the calibration set, at home)",
+        "sepsis": 358,
+        "timely": 60,
+        "very_early": 162,
+        "missed": 136
+      },
+      {
+        "name": "Hospital B (never trained on)",
+        "sepsis": 1142,
+        "timely": 109,
+        "very_early": 377,
+        "missed": 656
+      }
+    ],
+    "caption": "One mark per sepsis patient. Trained at hospital A, frozen, then scored once at hospital B. Timely means the first alert came in the 12 hours before onset. Very early means more than 12 hours before onset. Missed means no alert by onset. Source: the frozen result files, the same numbers as the table below."
+  },
   "models": {
     "columns": [
       "Method",
