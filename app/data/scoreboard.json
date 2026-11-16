@@ -60,8 +60,9 @@
     },
     {
       "big": "9.3x fewer",
-      "what": "false alarms than a bedside rule (modified SIRS): 1,358 against 12,630 of 18,858 patients",
-      "short": "false alarms than a bedside rule"
+      "what": "false alarms than a bedside rule (modified SIRS): 1,358 against 12,630 of 18,858 patients. The rule flags more sepsis patients by onset: 966 of 1,142, against 486",
+      "slim_big": "7.2%",
+      "short": "false alarms, 1,358 of 18,858"
     },
     {
       "big": "486 of 1,142",
@@ -103,7 +104,7 @@
         "tone": "after"
       }
     ],
-    "caption": "From the one frozen hospital B run. The misses are in the picture above and the tables below."
+    "caption": "From the one frozen hospital B run. The misses are in the picture above and the tables below. The bedside rule flags more sepsis patients by onset (966 of 1,142, against 486 here) and pays for it with 12,630 false alarms. Part of the gap is where each alert line sits."
   },
   "dots": {
     "title": "Missed sepsis patients: 38% at home, 57% at a second hospital",

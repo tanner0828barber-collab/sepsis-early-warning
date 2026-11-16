@@ -120,8 +120,11 @@ if b is not None:
         {"big": f'{rule["false_alarms"] / main["false_alarms"]:.1f}x fewer',
          "what": (
              f'false alarms than a bedside rule (modified SIRS): {n(main["false_alarms"])} against {n(rule["false_alarms"])} '
-             f'of {n(main["non_sepsis_patients"])} patients'
-         ), "short": "false alarms than a bedside rule"},
+             f'of {n(main["non_sepsis_patients"])} patients. The rule flags more sepsis patients by onset: '
+             f'{n(rule["caught"] + rule["very_early"])} of {n(sepsis_b)}, against {n(main["caught"] + main["very_early"])}'
+         ),
+         # the one line above the tabs gives the plain false alarm count, with no comparison that needs a second number to be fair
+         "slim_big": pct(main["false_alarm_share"]), "short": f'false alarms, {n(main["false_alarms"])} of {n(main["non_sepsis_patients"])}'},
         {"big": f'{n(main["caught"] + main["very_early"])} of {n(sepsis_b)}',
          "what": f'sepsis patients alerted before onset, {n(main["caught"])} of them in the last 12 hours', "short": "alerted before onset"},
         {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients missed: no alert by onset", "tone": "miss", "short": "missed"},
@@ -146,7 +149,12 @@ if b is not None:
             {"big": f'{main["hourly_auroc"]:.3f}',
              "what": f'hourly ranking score (AUC) at hospital B, {main_a["hourly_auroc"]:.3f} at home. 0.5 is a coin flip, 1 is perfect.'},
         ],
-        "caption": "From the one frozen hospital B run. The misses are in the picture above and the tables below.",
+        "caption": (
+            "From the one frozen hospital B run. The misses are in the picture above and the tables below. "
+            f'The bedside rule flags more sepsis patients by onset ({n(rule["caught"] + rule["very_early"])} of {n(sepsis_b)}, against '
+            f'{n(main["caught"] + main["very_early"])} here) and pays for it with {n(rule["false_alarms"])} false alarms. '
+            "Part of the gap is where each alert line sits."
+        ),
     }
     out["dots"] = {
         "title": (

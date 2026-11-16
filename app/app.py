@@ -329,6 +329,8 @@ CSS += f"""
 @media (max-width: 1000px) {{ .strip, .winsgrid {{ grid-template-columns: repeat(2, 1fr); }} }}
 @media (max-width: 700px) {{ .strip, .winsgrid {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} .strip .trust span {{ white-space: normal; }} }}
 .state .word.long {{ font-size: clamp(38px, 4.5vw, 56px); }}
+.state .whatif {{ font-size: 13.5px; line-height: 1.4; color: #C5CED8; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.14); }}
+.state .whatif b {{ display: block; color: {CHALK}; font-size: 14px; margin-bottom: 2px; }}
 /* Gradio dims a block to 20% while each update loads. On Play that flashed the whole board every hour. */
 .gradio-container .pending {{ opacity: 1 !important; transition: none !important; }}
 /* Time passing is shown on the chart itself: the newest point pulses once each hour, and the hour label brightens. */
@@ -393,6 +395,19 @@ def seen_so_far(pid, hour):
     inputs = build_features(rows)
     inputs["score"] = score_rows(MODEL, inputs, COLUMNS, SMOOTH)
     return inputs
+
+
+@lru_cache(maxsize=4096)
+def clock_reset(pid, hour):
+    """A what-if, not an explanation: this hour's score if the clock input alone were set back to the first hour.
+
+    Every other input stays exactly as the model saw it at this hour. One row is scored on the frozen
+    model and nothing is retrained. Returned as a multiple of the frozen alert line.
+    """
+    seen = seen_so_far(pid, hour)
+    row = seen.iloc[[-1]].copy()
+    row["hours_in_unit"] = seen["hours_in_unit"].iloc[0]
+    return float(score_rows(MODEL, row, COLUMNS, 1)[0]) / THRESHOLD
 
 
 def truth(pid):
@@ -492,10 +507,19 @@ def state_tile(m, label):
             # The past tense keeps the two tiles from looking like they disagree.
             word = "Alerted"
             text.append("The score is back under the alert line now.")
+    # How much of this hour's score is time in the unit: the same readings, with only the clock input set back.
+    whatif = ""
+    if m.hour > m.first:
+        reset = clock_reset(m.pid, m.hour)
+        whatif = (
+            f'<p class="whatif"><b>What if the clock were reset?</b>These same readings at hour {m.first} would score '
+            f'{reset:.2f} times the alert line. At hour {m.hour} they score {m.now_relative:.2f}. '
+            "One input changed on the frozen model. A what-if, not a full explanation.</p>"
+        )
     return (
         f'<section class="tile state {kind}"><div class="corner"><span>{label}</span><span>Hour {m.hour} of {m.last}</span></div>'
         f'<div role="status"><div class="word display{" long" if len(word) > 6 else ""}">{shape(kind)}<span>{word}</span></div>'
-        f'<p class="lead">{lead}</p>{"".join(f"<p>{t}</p>" for t in text)}</div></section>'
+        f'<p class="lead">{lead}</p>{"".join(f"<p>{t}</p>" for t in text)}</div>{whatif}</section>'
     )
 
 
@@ -862,7 +886,7 @@ def slim_strip():
     numbers = SCOREBOARD.get("strip")
     if not numbers:
         return ""
-    cells = "".join(f'<span class="{item.get("tone", "num")}"><b class="display">{item["big"]}</b> {item.get("short", item["what"])}</span>' for item in numbers)
+    cells = "".join(f'<span class="{item.get("tone", "num")}"><b class="display">{item.get("slim_big", item["big"])}</b> {item.get("short", item["what"])}</span>' for item in numbers)
     return f'<div class="slim" aria-label="The result at hospital B">{cells}</div>'
 
 
