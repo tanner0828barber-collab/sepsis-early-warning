@@ -1,5 +1,6 @@
 {
-  "headline": "Trained at hospital A, frozen, then tested once at hospital B.",
+  "method": "Trained at hospital A, frozen, then tested once at hospital B.",
+  "headline": "The official score fell from 0.368 at home to 0.238 at the second hospital.",
   "finding": "At hospital B, 109 of 1,142 sepsis patients (9.5%) got their first alert in the 12 hours before onset. Another 377 were alerted earlier than that, and 656 were missed. It raised a false alarm on 1,358 of 18,858 patients who never developed sepsis (7.2%, against the 15% budget set at hospital A). The official utility score fell from 0.368 at hospital A dev (the calibration set) to 0.238 at hospital B. A model that sees only hours in the unit scored 0.242 there.",
   "two_hospitals": {
     "columns": [

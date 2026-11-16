@@ -87,7 +87,9 @@ else:
         "rows": [[n, x, y] for n, x, y in zip(ROW_NAMES, site_column(main_a), site_column(main))],
     }
     direction = "fell" if main["utility"] < main_a["utility"] else "rose"
-    out["headline"] = "Trained at hospital A, frozen, then tested once at hospital B."
+    # the headline states what was found; how it was tested sits above it as a small label
+    out["method"] = "Trained at hospital A, frozen, then tested once at hospital B."
+    out["headline"] = f'The official score {direction} from {main_a["utility"]:.3f} at home to {main["utility"]:.3f} at the second hospital.'
     out["finding"] = (
         f'At hospital B, {n(main["caught"])} of {n(main["sepsis_patients"])} sepsis patients ({pct(main["caught_share"])}) got their first alert '
         f'in the 12 hours before onset. Another {n(main["very_early"])} were alerted earlier than that, and {n(main["missed"])} were missed. '
@@ -192,7 +194,7 @@ else:
 in_time = main["caught"] + main["very_early"]
 out["proof"] = {
     "title": f'{site}, {main["patients"]:,} patients it never trained on',
-    "lede": out["headline"],
+    "lede": out.get("method", out["headline"]),
     "numbers": [
         {"big": f'{n(main["caught"])} of {n(main["sepsis_patients"])}',
          "what": "sepsis patients got a timely alert, in the 12 hours before onset"},

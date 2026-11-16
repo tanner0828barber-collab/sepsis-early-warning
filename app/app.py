@@ -840,7 +840,8 @@ def dot_picture():
 def travel_tab():
     tiles = [
         dot_picture(),
-        f'<section class="tile wide12"><div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
+        f'<section class="tile wide12"><h3>{SCOREBOARD.get("method", "")}</h3>'
+        f'<div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
         f'<section class="tile wide12"><h3>The full model at both hospitals</h3>{html_table(SCOREBOARD["two_hospitals"])}</section>',
         f'<section class="tile wide12"><h3>All planned models and both comparators</h3>{html_table(SCOREBOARD["models"], many=True)}</section>',
     ]
@@ -970,7 +971,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                     label="Hour in the unit", interactive=True, elem_classes="hour",
                 )
             unit_timer = gr.Timer(0.7, active=False)
-            unit_view = gr.HTML(unit_board.board(unit_board.START_HOUR))
+            # The bed buttons sit above the board, so opening a patient does not mean scrolling past all 12 rows.
             with gr.Column(elem_classes="bedpick"):
                 gr.HTML('<p class="caption">Open one bed in the Replay, at the hour the board is showing, to see what the model saw.</p>')
                 with gr.Row(elem_classes="buttons"):
@@ -978,6 +979,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                         pid: gr.Button(f"Bed {bed}", scale=0, min_width=0)
                         for pid, bed in sorted(unit_board.BEDS.items(), key=lambda item: item[1])
                     }
+            unit_view = gr.HTML(unit_board.board(unit_board.START_HOUR))
 
             # Same pattern as the Replay: whichever control moves the hour also returns the redrawn board.
             unit_hour.input(unit_board.board, unit_hour, unit_view, show_progress="hidden")

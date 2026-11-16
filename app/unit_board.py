@@ -186,7 +186,8 @@ def _vitals(vitals):
 
 def _happened(happened):
     if happened is None:
-        return '<div class="ub-happened shut">Not revealed yet</div>'
+        # a quiet bar, not the same three words on every row; the words stay for screen readers and on hover
+        return '<div class="ub-happened shut" title="Not revealed yet"><i aria-hidden="true"></i><span>Not revealed yet</span></div>'
     return f'<div class="ub-happened {happened["kind"]}">{happened["text"]}</div>'
 
 
@@ -224,7 +225,8 @@ def board(hour):
     over = sum(1 for bed in here if bed["status"] == "over")
     lead = (
         f"{plural(len(here), 'patient')} in the unit at this hour, ranked by the model's score, highest first. "
-        f"{'None is' if over == 0 else plural(over, 'patient') + (' is' if over == 1 else ' are')} over the alert line now."
+        f"{'None is' if over == 0 else plural(over, 'patient') + (' is' if over == 1 else ' are')} over the alert line now. "
+        "What happened to each patient stays hidden until the board reaches it."
     )
     rows = "".join(_row(rank, bed) for rank, bed in enumerate(here, start=1))
     listing = f'<ol class="ub-list">{rows}</ol>' if here else '<p class="finding">Every record has ended by this hour.</p>'
@@ -283,8 +285,10 @@ def css(c):
 .ub-vitals em {{ font-style: normal; color: {c['AMBER']}; font-size: 13px; white-space: nowrap; }} .ub-vitals b + em {{ display: block; }}
 .ub-happened {{ font-size: 14.5px; line-height: 1.4; }}
 .ub-happened.shut {{ color: {c['FOG']}; }}
+.ub-happened.shut i {{ display: inline-block; width: 22px; height: 2px; border-radius: 2px; background: {c['RULE']}; vertical-align: middle; }}
+.ub-happened.shut span {{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }}
 .ub-happened.missed {{ color: {c['VIOLET']}; font-weight: 600; }} .ub-happened.false {{ color: {c['AMBER']}; }}
-.gradio-container .bedpick {{ background: {c['TILE']}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 12px 14px; gap: 8px; margin-top: 14px; }}
+.gradio-container .bedpick {{ background: {c['TILE']}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 12px 14px; gap: 8px; margin-bottom: 14px; }}
 .gradio-container .bedpick .buttons {{ flex-wrap: wrap; gap: 8px; }}
 .gradio-container .bedpick button {{ flex: 0 0 auto; min-width: 0 !important; width: auto; min-height: 44px; padding: 0 14px; border-radius: 12px; font-size: 15px; font-weight: 600; }}
 @media (max-width: 1000px) {{
