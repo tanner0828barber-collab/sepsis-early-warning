@@ -116,22 +116,22 @@ if b is not None:
     # What held up comes first, the misses stay on the same line. Every number is from the frozen run.
     rule = b["Modified SIRS"]
     out["strip"] = [
-        {"big": n(main["patients"]), "what": "patients at a hospital the model never trained on, scored once after everything was frozen"},
+        {"big": n(main["patients"]), "what": "patients at a hospital it never trained on, scored once"},
         {"big": f'{rule["false_alarms"] / main["false_alarms"]:.1f}x fewer',
          "what": (
-             f'false alarms than a standard bedside rule (modified SIRS): {n(main["false_alarms"])} against {n(rule["false_alarms"])} '
-             f'of {n(main["non_sepsis_patients"])} patients who never developed sepsis'
+             f'false alarms than a bedside rule (modified SIRS): {n(main["false_alarms"])} against {n(rule["false_alarms"])} '
+             f'of {n(main["non_sepsis_patients"])} patients'
          )},
         {"big": f'{n(main["caught"] + main["very_early"])} of {n(sepsis_b)}',
-         "what": f'sepsis patients alerted before onset: {n(main["caught"])} in the last 12 hours, {n(main["very_early"])} earlier'},
+         "what": f'sepsis patients alerted before onset, {n(main["caught"])} of them in the last 12 hours'},
         {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients missed: no alert by onset", "tone": "miss"},
     ]
     out["trust"] = [
-        "Prediction written before any model was trained",
-        "Model and alert line frozen before hospital B was scored",
-        "Hospital B scored once",
-        "Tests check the model never sees a future hour",
-        "Experiments planned in writing before running, failures reported",
+        "Prediction written before training",
+        "Frozen before hospital B was scored",
+        "Scored once",
+        "Tests check it never sees the future",
+        "Failures reported",
     ]
     out["strengths"] = {
         "title": "What held up at the second hospital",

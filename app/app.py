@@ -305,7 +305,7 @@ CSS += f"""
 
 # the promise under the title, the result strip above the tabs, and the dot picture on the travel tab
 CSS += f"""
-.promise {{ margin: 8px 0 0; font-size: 18px; line-height: 1.45; color: {CHALK}; max-width: 70ch; }}
+.promise {{ margin: 8px 0 0; font-size: 17px; line-height: 1.45; color: {CHALK}; max-width: 118ch; }}
 .promise span {{ color: {FOG}; }}
 .strip {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 22px; background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 14px 20px 16px; margin-top: 4px; }}
 .strip .where {{ grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: {FOG}; }}
@@ -329,6 +329,14 @@ CSS += f"""
 @media (max-width: 1000px) {{ .strip, .winsgrid {{ grid-template-columns: repeat(2, 1fr); }} }}
 @media (max-width: 700px) {{ .strip, .winsgrid {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} .strip .trust span {{ white-space: normal; }} }}
 .state .word.long {{ font-size: clamp(38px, 4.5vw, 56px); }}
+/* Gradio dims a block to 20% while each update loads. On Play that flashed the whole board every hour. */
+.gradio-container .pending {{ opacity: 1 !important; transition: none !important; }}
+/* Time passing is shown on the chart itself: the newest point pulses once each hour, and the hour label brightens. */
+@keyframes hourpulse {{ from {{ transform: scale(2.6); opacity: .35; }} to {{ transform: scale(1); opacity: 1; }} }}
+@keyframes hourglow {{ from {{ color: {CHALK}; }} to {{ color: {FOG}; }} }}
+.scoretile svg .nowdot {{ transform-box: fill-box; transform-origin: center; animation: hourpulse .5s ease-out; }}
+.scoretile h3 {{ animation: hourglow .6s ease-out; }}
+.playhint {{ font-size: 14px; color: {FOG}; margin: 0; }}
 details.more {{ margin: 8px 2px 0; }}
 details.more summary {{ cursor: pointer; color: {FOG}; font-size: 14px; font-weight: 600; width: fit-content; border-radius: 6px; }}
 details.more summary:hover {{ color: {CHALK}; }}
@@ -682,6 +690,9 @@ LABELS.update({pid: f"Bed {bed}, from the unit board" for pid, bed in unit_board
 SITE = CASES["site"][0].lower() + CASES["site"][1:]   # "hospital B", for the middle of a sentence
 
 
+CASE_RULES = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
+
+
 def show(pid, hour):
     """Every tile on the Replay tab for one patient at one hour."""
     if not pid:
@@ -693,10 +704,12 @@ def show(pid, hour):
     m = moment(pid, int(min(max(round(hour), first), last)))
     vitals = "".join(vital_tile(m, *tile) for tile in VITAL_TILES)
     return (
-        f'<div class="grid12">{state_tile(m, LABELS[pid])}{vitals}{score_tile(m)}{happened_tile(m)}{proof_tile()}{inputs_tile(m)}</div>'
+        # The score against the alert line comes first, right under Play, so the line and the button are on one screen.
+        f'<div class="grid12">{score_tile(m)}{state_tile(m, LABELS[pid])}{vitals}{happened_tile(m)}{proof_tile()}{inputs_tile(m)}</div>'
         f'<p class="source">Source: PhysioNet / Computing in Cardiology Challenge 2019, {SITE}, one public de-identified record. '
         "Retrospective replay of a saved record, not a live monitor. Nothing you do here is stored. "
         "This project is a prototype and is not medical advice.</p>"
+        f'<details class="more"><summary>How the four saved patients were chosen</summary><p class="source">By rule, not by eye: {CASE_RULES}.</p></details>'
         '<details class="more"><summary>How to read the charts</summary><p class="source">'
         "In the four small charts a dot is a real measurement, a ring at the edge is a measurement off the scale, the line carries the "
         "last one forward, and the gray strips are where the "
@@ -946,10 +959,9 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                     play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
                     step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 hour = gr.Slider(START_FIRST, START_LAST, value=START_AT, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
-                rules = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
                 gr.HTML(
-                    f'<p class="caption">Four saved patients from {SITE}, chosen by rule, not by eye.</p>'
-                    f'<details class="more"><summary>How they were chosen</summary><p class="caption">{rules}.</p></details>'
+                    f'<p class="playhint">Four saved patients from {SITE}, chosen by rule, not by eye. '
+                    "Play stops at the first alert and at sepsis onset. Press Play again to go on.</p>"
                 )
             timer = gr.Timer(0.7, active=False)
 
@@ -980,6 +992,11 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                 first, last = hours_of(pid)
                 nxt = min(int(now) + 1, last)
                 if nxt >= last:
+                    return nxt, gr.Timer(active=False), "Play", show(pid, nxt)
+                # Play stops at the two hours worth looking at: the first alert, and sepsis onset. Play again goes on.
+                # Both are known at this hour: the alert from the score so far, onset because the replay has reached it.
+                at = moment(pid, nxt)
+                if nxt == at.first_alert or (at.sepsis and nxt == at.onset):
                     return nxt, gr.Timer(active=False), "Play", show(pid, nxt)
                 return nxt, gr.Timer(), gr.Button(), show(pid, nxt)
 
