@@ -28,10 +28,10 @@ Of the 18,858 patients who never developed sepsis, **1,358 (7.2%) got a false al
 
 ### What it is good at
 
-- **It is quiet.** At a hospital it had never seen, it raised 1,358 false alarms where the bedside SIRS rule raised 12,630. That is 9 times fewer. The rule scored below never alerting (-0.014). My model scored 0.238.
+- **It is quiet.** At a hospital it had never seen, it raised 1,358 false alarms where SIRS, the classic bedside sepsis checklist, raised 12,630. That is 9 times fewer. The rule scored below never alerting (-0.014). My model scored 0.238.
 - **It still finds patients after the move.** It flagged 486 of 1,142 sepsis patients by onset at hospital B, with an hourly AUROC of 0.78.
 - **It holds up next to a commercial alarm.** When the widely used Epic Sepsis Model was checked at an outside hospital, it had an AUC of 0.63, missed 67% of sepsis patients, and alerted on 18% of all hospitalized patients ([Wong et al., 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8218233/)). Mine missed 57% with false alarms on 7.2%. Those are different patients, different sepsis definitions, and a different kind of AUC, so this is context and not a head to head test.
-- **With local data it reaches the top teams' range.** After the frozen run, one model trained on both hospitals scored 0.402 at hospital A and 0.406 at hospital B. The challenge's official top five teams scored 0.395 to 0.434 at these two hospitals ([official results](https://moody-challenge.physionet.org/2019/results/challenge.tsv)). Their scores are on hidden test patients and mine are on the public patients, and my run is after-the-fact, so this is also context.
+- **It gets much stronger with local data.** After the frozen run, one model trained on both hospitals scored 0.402 at hospital A and 0.406 at hospital B, and flagged 922 of 1,142 sepsis patients by onset at hospital B with 25.2% false alarms. This run is after-the-fact and has seen hospital B, so it is not a test of whether a model travels.
 
 The weak spots are just as real, and they are in the results below.
 
