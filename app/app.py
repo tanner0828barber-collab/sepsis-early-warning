@@ -343,7 +343,14 @@ CSS += f"""
 .gradio-container .transport button.go.secondary {{ min-height: 52px; }}
 .gradio-container .transport .hour input[type=number] {{ font-size: 24px; font-weight: 700; min-width: 84px; text-align: center; border-color: {TIDE}; font-variant-numeric: tabular-nums; }}
 .gradio-container .transport .hour label span, .gradio-container .transport .hour .head span {{ font-size: 15px; color: {CHALK}; }}
-.gradio-container .transport .hour input[type=range] {{ accent-color: {TIDE}; height: 8px; }}
+/* The hour slider reads as one bar filling with light grey. The round handle is still there to drag, it is just not drawn,
+   so the fill can glide from hour to hour with nothing jumping ahead of it. */
+.gradio-container .transport .hour input[type=range] {{ height: 10px; border-radius: 999px; background-color: {RULE}; background-image: linear-gradient(#C9D2DC, #C9D2DC); accent-color: #C9D2DC; transition: background-size .6s linear; cursor: pointer; }}
+.gradio-container .transport .hour input[type=range]::-webkit-slider-runnable-track {{ height: 100%; }}
+.gradio-container .transport .hour input[type=range]::-webkit-slider-thumb {{ height: 18px; width: 18px; margin-top: -4px; border: 0; box-shadow: none; background-color: transparent; }}
+.gradio-container .transport .hour input[type=range]::-webkit-slider-thumb:hover {{ background: transparent; }}
+.gradio-container .transport .hour input[type=range]::-moz-range-track {{ height: 10px; background: transparent; }}
+.gradio-container .transport .hour input[type=range]::-moz-range-thumb {{ height: 18px; width: 18px; border: 0; background: transparent; box-shadow: none; }}
 .slim {{ display: flex; flex-wrap: wrap; gap: 4px 26px; align-items: baseline; margin-top: 2px; font-size: 14.5px; color: {FOG}; }}
 .slim b {{ font-size: 19px; font-weight: 700; color: {CHALK}; margin-right: 4px; font-variant-numeric: tabular-nums; }}
 .slim .miss b {{ color: {AMBER}; }}
