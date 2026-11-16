@@ -4,9 +4,9 @@
 
 Tanner Barber, solo. Health track. This project is a prototype and is not medical advice.
 
-| 9x fewer | 486 of 1,142 | 0.40 | 40,336 |
+| 7.2% vs 67% | 486 of 1,142 | 0.40 vs 0.43 | 40,336 |
 |---|---|---|---|
-| false alarms than the bedside rule at a hospital it had never seen | sepsis patients flagged by onset there, 109 in the final 12 hours | utility with local data, inside the top five teams' range | patients, two hospitals, one frozen test run, solo in 48 hours |
+| false alarms: my model vs the standard bedside rule, at a new hospital | sepsis patients flagged by the time sepsis began, at that new hospital | my score with local data vs the 2019 challenge winner (1 is perfect) | patient records, two hospitals, one frozen test run, solo in 48 hours |
 
 ## The problem
 I chose this problem because my great uncle is in the hospital with sepsis right now. About 1.7 million U.S. adults develop sepsis each year, and at least 350,000 die in the hospital or are discharged to hospice ([CDC](https://www.cdc.gov/sepsis/about/)). Alarms built at one hospital often stumble at the next. Checked at an outside hospital, the widely used Epic Sepsis Model missed 67% of sepsis patients and alerted on 18% of all hospitalized patients ([Wong et al., 2021](https://pmc.ncbi.nlm.nih.gov/articles/PMC8218233/)).
@@ -44,7 +44,7 @@ Utility is the challenge's official score (1 is perfect, never alerting is 0). "
 - **Quiet.** At a hospital it had never seen: 1,358 false alarms against the bedside rule's 12,630. The rule scored below never alerting.
 - **Still finds patients.** 486 of 1,142 flagged by onset at hospital B, with an hourly AUROC of 0.78.
 - **Holds up next to a commercial alarm.** Epic's model in its outside check: AUC 0.63, 67% missed, 18% alerted. Mine: 57% missed, 7.2% false alarms. Different patients and definitions, so this is context, not a head to head test.
-- **Reaches the top teams' range with local data.** Trained on both hospitals after the frozen run: 0.402 at A and 0.406 at B, with 922 of 1,142 flagged by onset at 25.2% false alarms. The top five teams scored 0.395 to 0.434 here ([official results](https://moody-challenge.physionet.org/2019/results/challenge.tsv)). After-the-fact, on different patients.
+- **Close to the challenge winner once it has local data.** This data comes from the PhysioNet 2019 sepsis challenge, where the winning team scored about 0.43 at these two hospitals ([official results](https://moody-challenge.physionet.org/2019/results/challenge.tsv)). Trained on both hospitals after the frozen run, mine scored 0.402 and 0.406, with 25.2% false alarms. After-the-fact, on different patients.
 
 **What it is not good at yet.** Only 109 first alerts landed in the final 12 hours, and 656 patients were missed. At hospital B it did not beat the hours-only model. First-day sepsis is the weak spot: 11% flagged by onset (57 of 514) against 68% later (429 of 628). Patients 80 and over did worst (36%, against 40% to 47% for younger groups). Women 42%, men 43%. The data has no race or ethnicity field.
 
