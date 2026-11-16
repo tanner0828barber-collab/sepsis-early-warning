@@ -1,0 +1,12 @@
+# Hosting settings for Render (render.com), free plan. This file only tells Render how to start the app.
+# The app is the same one that runs locally with: python app/app.py
+services:
+  - type: web
+    name: sepsis-early-warning
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: GRADIO_SERVER_NAME=0.0.0.0 GRADIO_SERVER_PORT=$PORT python app/app.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
