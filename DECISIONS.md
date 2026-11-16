@@ -288,6 +288,7 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - So the board shows no timely catch: two very early alerts, one miss, one false alarm. That is what the draw gave, and it matches the hospital B result (9.5% timely, 33% very early, 57% missed). It stays. Twelve patients measure nothing, so none of this is reported as a result.
   - Also changed on the Replay: the score tile now leads with a plain word ("Below the line," "Near the line," "Over the line"). The exact number and "the model score divided by the frozen alert cutoff, not a probability" stay next to it. Any bed on the board can be opened in the Replay at the hour the board is showing.
   - Checks: 23 tests pass, 6 of them new for the board. One cuts each record off at an hour, scores it again, and confirms the board shows the same number, so the board cannot see the future. The app was checked by hand at desktop and phone width.
+- Sun 11/15, 6:48 PM. Tanner asked for the Replay to be the first tab, so the app opens on the tile screen. The Unit board is now the second tab. Only the order of the two tabs changed: no model, threshold, patient or reported number changed. Checks: 23 tests pass, and in the running app the page opens on the Replay, Step moves the hour, and a bed button on the Unit board still opens that bed in the Replay.
 
 ## Sunday night: the alert cutoff and a different library (after-the-fact)
 

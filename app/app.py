@@ -792,51 +792,6 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
         gr.HTML('<div class="preview">Development preview: these patients and numbers are from hospital A dev, not hospital B.</div>')
 
     with gr.Tabs() as tabs:
-        with gr.Tab("Unit board", id="unit"):
-            with gr.Column(elem_classes="transport"):
-                with gr.Row(elem_classes="buttons"):
-                    gr.HTML("", elem_classes="spacer")
-                    unit_play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
-                    unit_step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
-                unit_hour = gr.Slider(
-                    unit_board.FIRST_HOUR, unit_board.LAST_HOUR, value=unit_board.START_HOUR, step=1,
-                    label="Hour in the unit", interactive=True, elem_classes="hour",
-                )
-            unit_timer = gr.Timer(0.7, active=False)
-            unit_view = gr.HTML(unit_board.board(unit_board.START_HOUR))
-            with gr.Column(elem_classes="bedpick"):
-                gr.HTML('<p class="caption">Open one bed in the Replay, at the hour the board is showing, to see what the model saw.</p>')
-                with gr.Row(elem_classes="buttons"):
-                    bed_buttons = {
-                        pid: gr.Button(f"Bed {bed}", scale=0, min_width=0)
-                        for pid, bed in sorted(unit_board.BEDS.items(), key=lambda item: item[1])
-                    }
-
-            # Same pattern as the Replay: whichever control moves the hour also returns the redrawn board.
-            unit_hour.input(unit_board.board, unit_hour, unit_view, show_progress="hidden")
-
-            def unit_advance(now):
-                """One hour forward on the board: the new hour, the timer, the Play label, and the board."""
-                nxt = min(int(now) + 1, unit_board.LAST_HOUR)
-                if nxt >= unit_board.LAST_HOUR:
-                    return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
-                return nxt, gr.Timer(), gr.Button(), unit_board.board(nxt)
-
-            def unit_step_once(now):
-                nxt, _, _, drawn = unit_advance(now)
-                return nxt, drawn
-
-            unit_step.click(unit_step_once, unit_hour, [unit_hour, unit_view], show_progress="hidden")
-            unit_timer.tick(unit_advance, unit_hour, [unit_hour, unit_timer, unit_play, unit_view], show_progress="hidden")
-
-            def unit_toggle(label, now):
-                if label == "Play":
-                    restart = unit_board.FIRST_HOUR if int(now) >= unit_board.LAST_HOUR else now   # at the end, Play starts over
-                    return gr.Timer(active=True), "Pause", restart, unit_board.board(restart)
-                return gr.Timer(active=False), "Play", now, unit_board.board(now)
-
-            unit_play.click(unit_toggle, [unit_play, unit_hour], [unit_timer, unit_play, unit_hour, unit_view], show_progress="hidden")
-
         with gr.Tab("Replay", id="replay"):
             current = gr.State(START)
             with gr.Column(elem_classes="transport"):
@@ -903,6 +858,51 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                 return gr.Timer(active=False), "Play", now, show(pid, now)
 
             play.click(toggle, [current, play, hour], [timer, play, hour, board], show_progress="hidden")
+
+        with gr.Tab("Unit board", id="unit"):
+            with gr.Column(elem_classes="transport"):
+                with gr.Row(elem_classes="buttons"):
+                    gr.HTML("", elem_classes="spacer")
+                    unit_play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
+                    unit_step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
+                unit_hour = gr.Slider(
+                    unit_board.FIRST_HOUR, unit_board.LAST_HOUR, value=unit_board.START_HOUR, step=1,
+                    label="Hour in the unit", interactive=True, elem_classes="hour",
+                )
+            unit_timer = gr.Timer(0.7, active=False)
+            unit_view = gr.HTML(unit_board.board(unit_board.START_HOUR))
+            with gr.Column(elem_classes="bedpick"):
+                gr.HTML('<p class="caption">Open one bed in the Replay, at the hour the board is showing, to see what the model saw.</p>')
+                with gr.Row(elem_classes="buttons"):
+                    bed_buttons = {
+                        pid: gr.Button(f"Bed {bed}", scale=0, min_width=0)
+                        for pid, bed in sorted(unit_board.BEDS.items(), key=lambda item: item[1])
+                    }
+
+            # Same pattern as the Replay: whichever control moves the hour also returns the redrawn board.
+            unit_hour.input(unit_board.board, unit_hour, unit_view, show_progress="hidden")
+
+            def unit_advance(now):
+                """One hour forward on the board: the new hour, the timer, the Play label, and the board."""
+                nxt = min(int(now) + 1, unit_board.LAST_HOUR)
+                if nxt >= unit_board.LAST_HOUR:
+                    return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
+                return nxt, gr.Timer(), gr.Button(), unit_board.board(nxt)
+
+            def unit_step_once(now):
+                nxt, _, _, drawn = unit_advance(now)
+                return nxt, drawn
+
+            unit_step.click(unit_step_once, unit_hour, [unit_hour, unit_view], show_progress="hidden")
+            unit_timer.tick(unit_advance, unit_hour, [unit_hour, unit_timer, unit_play, unit_view], show_progress="hidden")
+
+            def unit_toggle(label, now):
+                if label == "Play":
+                    restart = unit_board.FIRST_HOUR if int(now) >= unit_board.LAST_HOUR else now   # at the end, Play starts over
+                    return gr.Timer(active=True), "Pause", restart, unit_board.board(restart)
+                return gr.Timer(active=False), "Play", now, unit_board.board(now)
+
+            unit_play.click(unit_toggle, [unit_play, unit_hour], [unit_timer, unit_play, unit_hour, unit_view], show_progress="hidden")
 
         def open_bed(pid, board_hour):
             """Open one of the board's beds in the Replay, at the hour the board is showing, and stop the board."""
