@@ -116,15 +116,15 @@ if b is not None:
     # What held up comes first, the misses stay on the same line. Every number is from the frozen run.
     rule = b["Modified SIRS"]
     out["strip"] = [
-        {"big": n(main["patients"]), "what": "patients at a hospital it never trained on, scored once"},
+        {"big": n(main["patients"]), "what": "patients at a hospital it never trained on, scored once", "short": "patients it never trained on"},
         {"big": f'{rule["false_alarms"] / main["false_alarms"]:.1f}x fewer',
          "what": (
              f'false alarms than a bedside rule (modified SIRS): {n(main["false_alarms"])} against {n(rule["false_alarms"])} '
              f'of {n(main["non_sepsis_patients"])} patients'
-         )},
+         ), "short": "false alarms than a bedside rule"},
         {"big": f'{n(main["caught"] + main["very_early"])} of {n(sepsis_b)}',
-         "what": f'sepsis patients alerted before onset, {n(main["caught"])} of them in the last 12 hours'},
-        {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients missed: no alert by onset", "tone": "miss"},
+         "what": f'sepsis patients alerted before onset, {n(main["caught"])} of them in the last 12 hours', "short": "alerted before onset"},
+        {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients missed: no alert by onset", "tone": "miss", "short": "missed"},
     ]
     out["trust"] = [
         "Prediction written before training",

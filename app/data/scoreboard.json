@@ -55,20 +55,24 @@
   "strip": [
     {
       "big": "20,000",
-      "what": "patients at a hospital it never trained on, scored once"
+      "what": "patients at a hospital it never trained on, scored once",
+      "short": "patients it never trained on"
     },
     {
       "big": "9.3x fewer",
-      "what": "false alarms than a bedside rule (modified SIRS): 1,358 against 12,630 of 18,858 patients"
+      "what": "false alarms than a bedside rule (modified SIRS): 1,358 against 12,630 of 18,858 patients",
+      "short": "false alarms than a bedside rule"
     },
     {
       "big": "486 of 1,142",
-      "what": "sepsis patients alerted before onset, 109 of them in the last 12 hours"
+      "what": "sepsis patients alerted before onset, 109 of them in the last 12 hours",
+      "short": "alerted before onset"
     },
     {
       "big": "656 of 1,142",
       "what": "sepsis patients missed: no alert by onset",
-      "tone": "miss"
+      "tone": "miss",
+      "short": "missed"
     }
   ],
   "trust": [

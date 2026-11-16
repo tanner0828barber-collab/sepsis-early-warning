@@ -336,7 +336,20 @@ CSS += f"""
 @keyframes hourglow {{ from {{ color: {CHALK}; }} to {{ color: {FOG}; }} }}
 .scoretile svg .nowdot {{ transform-box: fill-box; transform-origin: center; animation: hourpulse .5s ease-out; }}
 .scoretile h3 {{ animation: hourglow .6s ease-out; }}
-.playhint {{ font-size: 14px; color: {FOG}; margin: 0; }}
+.playhint {{ font-size: 14px; color: {FOG}; margin: 0; text-align: right; padding-right: 6px; }}
+.slim {{ display: flex; flex-wrap: wrap; gap: 4px 26px; align-items: baseline; margin-top: 2px; font-size: 14.5px; color: {FOG}; }}
+.slim b {{ font-size: 19px; font-weight: 700; color: {CHALK}; margin-right: 4px; font-variant-numeric: tabular-nums; }}
+.slim .miss b {{ color: {AMBER}; }}
+/* Rules inside a media block must not start with .gradio-container (Gradio adds its own prefix there). */
+@media (min-width: 901px) {{
+  .scoretile {{ grid-column: span 8; }} .scoretile svg.wide {{ display: none; }} .scoretile svg.mid {{ display: block; }}
+  .scorehead {{ flex-wrap: nowrap; align-items: center; margin: 2px 0 0; }} .scorehead b.level {{ font-size: 34px; white-space: nowrap; }}
+  .scorehead span {{ font-size: 13.5px; line-height: 1.35; padding-bottom: 0; }}
+  .state {{ grid-column: span 4; grid-row: auto; min-height: 0; }}
+  .vital {{ grid-column: span 3; padding: 12px 16px; }} .vital .val b {{ font-size: 44px; }} .vital .val b.none {{ line-height: 44px; }}
+}}
+/* On a short window the small vital sign charts give way, so the four numbers stay on the screen with the chart and Play. */
+@media (min-width: 901px) and (max-height: 960px) {{ .vital svg {{ display: none; }} .tabs .tab-nav {{ margin: 4px 0 10px; }} }}
 details.more {{ margin: 8px 2px 0; }}
 details.more summary {{ cursor: pointer; color: {FOG}; font-size: 14px; font-weight: 600; width: fit-content; border-radius: 6px; }}
 details.more summary:hover {{ color: {CHALK}; }}
@@ -526,7 +539,7 @@ def score_chart(m, size="wide"):
     narrow = size == "narrow"
     plot, font = width - left - right, 12.5
     rail = [14, 30, 46]                     # one row per marker word, so two words never share a line
-    top, tall = 56, 150 if narrow else 170
+    top, tall = 56, 170 if size == "wide" else 150
     bottom = top + tall
     x = lambda h: left + (h - m.first) / m.span * plot
     low, high = math.log10(0.03), math.log10(30)   # log scale from 0.03 to 30 times the alert line
@@ -830,6 +843,15 @@ def result_strip():
     )
 
 
+def slim_strip():
+    """The same four frozen numbers on one line, above the tabs, so the Replay keeps the screen. The full strip is on the travel tab."""
+    numbers = SCOREBOARD.get("strip")
+    if not numbers:
+        return ""
+    cells = "".join(f'<span class="{item.get("tone", "num")}"><b class="display">{item["big"]}</b> {item.get("short", item["what"])}</span>' for item in numbers)
+    return f'<div class="slim" aria-label="The result at hospital B">{cells}</div>'
+
+
 def strengths_tile():
     """What held up at hospital B, from the frozen run. The misses stay in the picture above and the tables below."""
     data = SCOREBOARD.get("strengths")
@@ -889,6 +911,7 @@ def dot_picture():
 
 def travel_tab():
     tiles = [
+        f'<div class="wide12">{result_strip()}</div>',
         dot_picture(),
         strengths_tile(),
         f'<section class="tile wide12"><h3>{SCOREBOARD.get("method", "")}</h3>'
@@ -940,7 +963,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
     if CASES["source"] != "B":
         gr.HTML('<div class="preview">Development preview: these patients and numbers are from hospital A dev, not hospital B.</div>')
     else:
-        gr.HTML(result_strip())
+        gr.HTML(slim_strip())
 
     with gr.Tabs() as tabs:
         with gr.Tab("Replay", id="replay"):
@@ -955,14 +978,10 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                         )
                         for case in CASES["cases"]
                     ]
-                    gr.HTML("", elem_classes="spacer")
+                    gr.HTML('<p class="playhint">Play stops at the first alert and at sepsis onset.</p>', elem_classes="spacer")
                     play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
                     step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 hour = gr.Slider(START_FIRST, START_LAST, value=START_AT, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
-                gr.HTML(
-                    f'<p class="playhint">Four saved patients from {SITE}, chosen by rule, not by eye. '
-                    "Play stops at the first alert and at sepsis onset. Press Play again to go on.</p>"
-                )
             timer = gr.Timer(0.7, active=False)
 
             board = gr.HTML(show(START, START_AT))
