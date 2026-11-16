@@ -8,7 +8,7 @@ Every real choice in this project, with the time it was made (Phoenix time) and 
 
 Sat 11/14, 2:20 PM. I read the evidence summary and the prediction below and adopted it as my own before any model was trained. So the three points below are the prediction of record for this project. The wording and the sources are Claude's. The decision to stand behind it is mine.
 
-### The prediction (drafted by Claude at about 2:17 PM from published evidence, adopted by me at 2:20 PM)
+### The prediction 
 
 1. **Utility score at hospital B: down.** The top challenge teams scored about 0.43 on hospitals they trained on and below zero on one they had not seen. Moor et al. 2023 saw AUC fall from 0.846 inside a site to 0.761 across sites. Wong et al. 2021 measured 0.63 for a deployed alert against a vendor-reported 0.76 to 0.83. Guess, not a source: B loses a third to a half of the A dev score, and could go below zero.
 2. **False alarms at hospital B: more than the 15% budget, with low confidence.** The direction depends on whether ordinary hospital B patients look sicker to a model raised on hospital A, which nobody can know without looking. What is near certain is arithmetic: sepsis is rarer at B (5.7% against 8.8%), so even at the same false alarm rate a smaller share of alerts will be true.
