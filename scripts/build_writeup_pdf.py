@@ -16,10 +16,17 @@ import mistune
 
 ROOT = Path(__file__).resolve().parent.parent
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-CSS = """@page{size:Letter;margin:0.4in}
-body{margin:0;font-family:Helvetica,Arial,sans-serif;font-size:8.6pt;line-height:1.27;color:#111}
-h1{font-size:13pt;margin:0 0 4px}h2{font-size:10pt;margin:6px 0 1px}p{margin:2px 0}ol{margin:2px 0 2px 18px;padding:0}
-table{border-collapse:collapse;margin:3px 0;font-size:8pt}td,th{border:1px solid #bbb;padding:1.5px 5px;text-align:left}code{font-size:8pt}"""
+CSS = """@page{size:Letter;margin:0.4in 0.45in}
+body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:8.5pt;line-height:1.27;color:#1a1f24}
+a{color:#0b4f6c;text-decoration:none}strong{color:#0d1114}
+h1{font-size:14.5pt;line-height:1.15;margin:0 0 3px;color:#0b2f42;letter-spacing:-0.1px}
+h1+p{margin:0 0 5px;padding-bottom:4px;border-bottom:1.5px solid #0b4f6c;color:#4a5560}
+h1+p+p{margin:0 0 3px;padding:3px 8px;background:#eef4f7;border-left:3px solid #0b4f6c;font-size:8.8pt}
+h2{font-size:8.4pt;margin:5px 0 0;color:#0b4f6c;text-transform:uppercase;letter-spacing:0.7px}
+p{margin:2px 0}ol{margin:2px 0 2px 18px;padding:0}
+table{border-collapse:collapse;margin:3px 0;font-size:7.8pt;width:100%}
+th{background:#eef4f7;color:#0b2f42;border-bottom:1px solid #0b4f6c;padding:2px 6px;text-align:left}
+td{border-bottom:0.5px solid #c9d3da;padding:1.5px 6px;text-align:left}td:first-child,th:first-child{white-space:nowrap}code{font-size:7.8pt}"""
 
 html = mistune.create_markdown(plugins=["table"])((ROOT / "WRITEUP.md").read_text())
 page = f"<html><head><meta charset='utf-8'><style>{CSS}</style></head><body>{html}</body></html>"
