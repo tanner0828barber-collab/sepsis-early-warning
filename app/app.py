@@ -998,9 +998,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
         '<span class="tag">Research prototype. Not medical advice.</span></div>'
         '<p class="promise">A sepsis early warning tool for an intensive care nurse and the care team. '
         "Every hour my model reads each patient's vital signs and lab results and scores how close they are to a sepsis alert, "
-        "so a nurse or other healthcare professional can see who to look at first. "
-        '<span>My question: does an alarm trained at one hospital still work at a second one? '
-        'Press Play to watch one patient hour by hour.</span></p>'
+        "so a nurse or other healthcare professional can see who to look at first.</p>"
     )
     if CASES["source"] != "B":
         gr.HTML('<div class="preview">Development preview: these patients and numbers are from hospital A dev, not hospital B.</div>')
