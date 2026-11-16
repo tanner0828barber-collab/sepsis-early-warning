@@ -1040,14 +1040,14 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
         with gr.Tab("Unit board", id="unit"):
             with gr.Column(elem_classes="transport"):
                 with gr.Row(elem_classes="buttons"):
-                    gr.HTML("", elem_classes="spacer")
+                    gr.HTML('<p class="playhint">Arrows show beds that moved since the hour before. Play stops when a bed first alerts.</p>', elem_classes="spacer")
                     unit_play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
                     unit_step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 unit_hour = gr.Slider(
                     unit_board.FIRST_HOUR, unit_board.LAST_HOUR, value=unit_board.START_HOUR, step=1,
                     label="Hour in the unit", interactive=True, elem_classes="hour",
                 )
-            unit_timer = gr.Timer(0.7, active=False)
+            unit_timer = gr.Timer(1.2, active=False)   # slower than the Replay: 12 rows change at once here
             # The bed buttons sit above the board, so opening a patient does not mean scrolling past all 12 rows.
             with gr.Column(elem_classes="bedpick"):
                 gr.HTML('<p class="caption">Open one bed in the Replay, at the hour the board is showing, to see what the model saw.</p>')
@@ -1065,6 +1065,9 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                 """One hour forward on the board: the new hour, the timer, the Play label, and the board."""
                 nxt = min(int(now) + 1, unit_board.LAST_HOUR)
                 if nxt >= unit_board.LAST_HOUR:
+                    return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
+                # Play stops the hour a bed first alerts, so there is time to see which one. Play again goes on.
+                if any(bed.get("first_alert") == nxt for bed in unit_board.ranked(nxt)[0]):
                     return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
                 return nxt, gr.Timer(), gr.Button(), unit_board.board(nxt)
 

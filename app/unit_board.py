@@ -196,7 +196,17 @@ def _who(bed):
     return f'<div class="ub-bed"><b class="display">Bed {bed["bed"]}</b><span>{bed["who"]}, {age}</span></div>'
 
 
-def _row(rank, bed):
+def _moved(rank, before):
+    """How far this bed moved since the hour before, so a change in the order is easy to follow."""
+    if before is None:
+        return '<small class="ub-move new">new</small>'
+    if before == rank:
+        return ""
+    way, word = ("up", "\u25b2") if before > rank else ("down", "\u25bc")
+    return f'<small class="ub-move {way}" aria-label="moved {way} {abs(before - rank)}">{word} {abs(before - rank)}</small>'
+
+
+def _row(rank, bed, before=None, compare=False):
     status = bed["status"]
     words = STATUS_WORDS[status]
     if status == "earlier":
@@ -204,7 +214,8 @@ def _row(rank, bed):
     elif status == "over":
         words += f'<small>first at hour {bed["first_alert"]}</small>'
     return (
-        f'<li class="ub-row {status}"><div class="ub-rank display" aria-label="Number {rank} to look at">{rank}</div>{_who(bed)}'
+        f'<li class="ub-row {status}"><div class="ub-rank display" aria-label="Number {rank} to look at">{rank}'
+        f'{_moved(rank, before) if compare else ""}</div>{_who(bed)}'
         f'<div class="ub-status"><svg viewBox="0 0 16 16" aria-hidden="true">{SHAPES[status]}</svg><span>{words}</span></div>'
         f'{_meter(bed["relative"])}{_vitals(bed["vitals"])}{_happened(bed["happened"])}</li>'
     )
@@ -228,7 +239,12 @@ def board(hour):
         f"{'None is' if over == 0 else plural(over, 'patient') + (' is' if over == 1 else ' are')} over the alert line now. "
         "What happened to each patient stays hidden until the board reaches it."
     )
-    rows = "".join(_row(rank, bed) for rank, bed in enumerate(here, start=1))
+    # where each bed stood one hour earlier, so the row can say how far it moved
+    earlier = {bed["bed"]: rank for rank, bed in enumerate(ranked(hour - 1)[0], start=1)} if hour > FIRST_HOUR else None
+    rows = "".join(
+        _row(rank, bed, None if earlier is None else earlier.get(bed["bed"]), compare=earlier is not None)
+        for rank, bed in enumerate(here, start=1)
+    )
     listing = f'<ol class="ub-list">{rows}</ol>' if here else '<p class="finding">Every record has ended by this hour.</p>'
     gone = ""
     if away:
@@ -271,6 +287,8 @@ def css(c):
 .ub-row.away .ub-status {{ grid-column: 3 / 6; font-weight: 400; color: {c['FOG']}; }} .ub-row.away .ub-bed b {{ color: {c['FOG']}; }}
 .ub-rank {{ font-weight: 800; font-size: 30px; line-height: 1; color: {c['FOG']}; text-align: center; }}
 .ub-row.over .ub-rank {{ color: {c['FLARE']}; }}
+.ub-move {{ display: block; margin-top: 5px; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0; color: {c['FOG']}; white-space: nowrap; }}
+.ub-move.up {{ color: {c['CHALK']}; }}
 .ub-bed b {{ display: block; font-weight: 700; font-size: 19px; line-height: 1.2; }}
 .ub-bed span {{ color: {c['FOG']}; font-size: 14px; }}
 .ub-status {{ display: flex; align-items: center; gap: 8px; font-weight: 600; line-height: 1.25; }}
