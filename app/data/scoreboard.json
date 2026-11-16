@@ -54,18 +54,53 @@
   },
   "strip": [
     {
-      "big": "109 of 1,142",
-      "what": "sepsis patients got a timely alert, in the 12 hours before onset"
+      "big": "20,000",
+      "what": "patients at a hospital the model never trained on, scored once after everything was frozen"
+    },
+    {
+      "big": "9.3x fewer",
+      "what": "false alarms than a standard bedside rule (modified SIRS): 1,358 against 12,630 of 18,858 patients who never developed sepsis"
+    },
+    {
+      "big": "486 of 1,142",
+      "what": "sepsis patients alerted before onset: 109 in the last 12 hours, 377 earlier"
     },
     {
       "big": "656 of 1,142",
-      "what": "sepsis patients were missed: no alert by onset"
-    },
-    {
-      "big": "1,358 of 18,858",
-      "what": "patients who never developed sepsis got a false alarm (7.2%)"
+      "what": "sepsis patients missed: no alert by onset",
+      "tone": "miss"
     }
   ],
+  "trust": [
+    "Prediction written before any model was trained",
+    "Model and alert line frozen before hospital B was scored",
+    "Hospital B scored once",
+    "Tests check the model never sees a future hour",
+    "Experiments planned in writing before running, failures reported"
+  ],
+  "strengths": {
+    "title": "What held up at the second hospital",
+    "items": [
+      {
+        "big": "7.2%",
+        "what": "false alarms at hospital B, under the 15% budget set at hospital A. It did not flood a new unit with alarms."
+      },
+      {
+        "big": "0.238",
+        "what": "official score at hospital B, against -0.014 for the modified SIRS bedside rule and 0.000 for never alerting"
+      },
+      {
+        "big": "0.778",
+        "what": "hourly ranking score (AUC) at hospital B, 0.834 at home. 0.5 is a coin flip, 1 is perfect."
+      },
+      {
+        "big": "1,000",
+        "what": "The first 1,000 local patients close half the gap. After-the-fact: run after the hospital B result, chart below.",
+        "tone": "after"
+      }
+    ],
+    "caption": "From the one frozen hospital B run. The misses are in the picture above and the tables below."
+  },
   "dots": {
     "title": "Missed sepsis patients: 38% at home, 57% at a second hospital",
     "sites": [

@@ -113,12 +113,41 @@ out["two_hospitals"] = two
 # Same frozen numbers as the table above, nothing new is computed here.
 if b is not None:
     sepsis_b, sepsis_a = main["sepsis_patients"], main_a["sepsis_patients"]
+    # What held up comes first, the misses stay on the same line. Every number is from the frozen run.
+    rule = b["Modified SIRS"]
     out["strip"] = [
-        {"big": f'{n(main["caught"])} of {n(sepsis_b)}', "what": "sepsis patients got a timely alert, in the 12 hours before onset"},
-        {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients were missed: no alert by onset"},
-        {"big": f'{n(main["false_alarms"])} of {n(main["non_sepsis_patients"])}',
-         "what": f'patients who never developed sepsis got a false alarm ({pct(main["false_alarm_share"])})'},
+        {"big": n(main["patients"]), "what": "patients at a hospital the model never trained on, scored once after everything was frozen"},
+        {"big": f'{rule["false_alarms"] / main["false_alarms"]:.1f}x fewer',
+         "what": (
+             f'false alarms than a standard bedside rule (modified SIRS): {n(main["false_alarms"])} against {n(rule["false_alarms"])} '
+             f'of {n(main["non_sepsis_patients"])} patients who never developed sepsis'
+         )},
+        {"big": f'{n(main["caught"] + main["very_early"])} of {n(sepsis_b)}',
+         "what": f'sepsis patients alerted before onset: {n(main["caught"])} in the last 12 hours, {n(main["very_early"])} earlier'},
+        {"big": f'{n(main["missed"])} of {n(sepsis_b)}', "what": "sepsis patients missed: no alert by onset", "tone": "miss"},
     ]
+    out["trust"] = [
+        "Prediction written before any model was trained",
+        "Model and alert line frozen before hospital B was scored",
+        "Hospital B scored once",
+        "Tests check the model never sees a future hour",
+        "Experiments planned in writing before running, failures reported",
+    ]
+    out["strengths"] = {
+        "title": "What held up at the second hospital",
+        "items": [
+            {"big": pct(main["false_alarm_share"]),
+             "what": f'false alarms at hospital B, under the {budget}% budget set at hospital A. It did not flood a new unit with alarms.'},
+            {"big": f'{main["utility"]:.3f}',
+             "what": (
+                 f'official score at hospital B, against {rule["utility"]:.3f} for the modified SIRS bedside rule '
+                 f'and {b["Never alert"]["utility"]:.3f} for never alerting'
+             )},
+            {"big": f'{main["hourly_auroc"]:.3f}',
+             "what": f'hourly ranking score (AUC) at hospital B, {main_a["hourly_auroc"]:.3f} at home. 0.5 is a coin flip, 1 is perfect.'},
+        ],
+        "caption": "From the one frozen hospital B run. The misses are in the picture above and the tables below.",
+    }
     out["dots"] = {
         "title": (
             f'Missed sepsis patients: {pct(main_a["missed"] / sepsis_a, 0)} at home, '
@@ -318,6 +347,12 @@ out["prediction_box"] = (
     "Committed on Sat 11/14/2026 at 2:20 PM Phoenix time, before any model was trained (first commit in the repository)."
     f"<br><br><b>What happened:</b> {happened}"
 )
+
+# one more strength, from the after-the-fact local data run, labeled as such
+if "strengths" in out and "local_curve" in out:
+    out["strengths"]["items"].append({
+        "big": "1,000", "what": f'{out["local_curve"]["title"]}. After-the-fact: run after the hospital B result, chart below.', "tone": "after",
+    })
 
 target = ROOT / "app" / "data"
 target.mkdir(parents=True, exist_ok=True)

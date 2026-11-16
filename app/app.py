@@ -307,7 +307,7 @@ CSS += f"""
 CSS += f"""
 .promise {{ margin: 8px 0 0; font-size: 18px; line-height: 1.45; color: {CHALK}; max-width: 70ch; }}
 .promise span {{ color: {FOG}; }}
-.strip {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 22px; background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 14px 20px 16px; margin-top: 4px; }}
+.strip {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 22px; background: {TILE}; border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 14px 20px 16px; margin-top: 4px; }}
 .strip .where {{ grid-column: 1 / -1; font-size: 14px; font-weight: 600; color: {FOG}; }}
 .strip b {{ display: block; font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; color: {CHALK}; font-variant-numeric: tabular-nums; }}
 .strip .miss b {{ color: {AMBER}; }}
@@ -320,7 +320,14 @@ CSS += f"""
 .dotkey svg {{ display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 7px; }}
 .dotkey b {{ font-variant-numeric: tabular-nums; }}
 .dots .caption {{ margin-top: 14px; max-width: 110ch; }}
-@media (max-width: 700px) {{ .strip {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} }}
+.strip .trust {{ grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }}
+.strip .trust span {{ font-size: 13.5px; color: {CHALK}; border: 1px solid {RULE}; border-radius: 999px; padding: 3px 11px; white-space: nowrap; }}
+.winsgrid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 22px; margin-bottom: 12px; }}
+.winsgrid b {{ display: block; font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; color: {CHALK}; font-variant-numeric: tabular-nums; }}
+.winsgrid .after b {{ color: {AMBER}; }}
+.winsgrid span.what {{ display: block; font-size: 14.5px; line-height: 1.45; color: {FOG}; margin-top: 4px; }}
+@media (max-width: 1000px) {{ .strip, .winsgrid {{ grid-template-columns: repeat(2, 1fr); }} }}
+@media (max-width: 700px) {{ .strip, .winsgrid {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} .strip .trust span {{ white-space: normal; }} }}
 .state .word.long {{ font-size: clamp(38px, 4.5vw, 56px); }}
 details.more {{ margin: 8px 2px 0; }}
 details.more summary {{ cursor: pointer; color: {FOG}; font-size: 14px; font-weight: 600; width: fit-content; border-radius: 6px; }}
@@ -799,10 +806,30 @@ def result_strip():
     if not numbers:
         return ""
     cells = "".join(
-        f'<div class="{"miss" if i == 1 else "num"}"><b class="display">{item["big"]}</b><span class="what">{item["what"]}</span></div>'
-        for i, item in enumerate(numbers)
+        f'<div class="{item.get("tone", "num")}"><b class="display">{item["big"]}</b><span class="what">{item["what"]}</span></div>'
+        for item in numbers
     )
-    return f'<div class="strip"><span class="where">The result: trained at hospital A, frozen, then tested once at hospital B</span>{cells}</div>'
+    trust = "".join(f"<span>{line}</span>" for line in SCOREBOARD.get("trust", []))
+    trust = f'<div class="trust">{trust}</div>' if trust else ""
+    return (
+        '<div class="strip"><span class="where">Tested the hard way: trained at hospital A, frozen, then scored once at hospital B</span>'
+        f"{cells}{trust}</div>"
+    )
+
+
+def strengths_tile():
+    """What held up at hospital B, from the frozen run. The misses stay in the picture above and the tables below."""
+    data = SCOREBOARD.get("strengths")
+    if not data:
+        return ""
+    cells = "".join(
+        f'<div class="{item.get("tone", "num")}"><b class="display">{item["big"]}</b><span class="what">{item["what"]}</span></div>'
+        for item in data["items"]
+    )
+    return (
+        f'<section class="tile wide12 wins"><h3>Strengths</h3><div class="charttitle display">{data["title"]}</div>'
+        f'<div class="winsgrid">{cells}</div><p class="caption">{data["caption"]}</p></section>'
+    )
 
 
 # The three outcomes for a sepsis patient. Each has its own mark as well as its own color.
@@ -850,6 +877,7 @@ def dot_picture():
 def travel_tab():
     tiles = [
         dot_picture(),
+        strengths_tile(),
         f'<section class="tile wide12"><h3>{SCOREBOARD.get("method", "")}</h3>'
         f'<div class="headline display">{SCOREBOARD["headline"]}</div><p class="finding">{SCOREBOARD["finding"]}</p></section>',
         f'<section class="tile wide12"><h3>The full model at both hospitals</h3>{html_table(SCOREBOARD["two_hospitals"])}</section>',
