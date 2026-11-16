@@ -214,7 +214,10 @@ def _row(rank, bed, before=None, compare=False):
     elif status == "over":
         words += f'<small>first at hour {bed["first_alert"]}</small>'
     return (
-        f'<li class="ub-row {status}"><div class="ub-rank display" aria-label="Number {rank} to look at">{rank}'
+        # a bed that changed places slides from where it stood an hour ago (--d is how many rows it moved)
+        f'<li class="ub-row {status}{" moved" if compare and before not in (None, rank) else ""}" '
+        f'style="--d:{before - rank if compare and before is not None else 0}">'
+        f'<div class="ub-rank display" aria-label="Number {rank} to look at">{rank}'
         f'{_moved(rank, before) if compare else ""}</div>{_who(bed)}'
         f'<div class="ub-status"><svg viewBox="0 0 16 16" aria-hidden="true">{SHAPES[status]}</svg><span>{words}</span></div>'
         f'{_meter(bed["relative"])}{_vitals(bed["vitals"])}{_happened(bed["happened"])}</li>'
@@ -289,6 +292,8 @@ def css(c):
 .ub-row.over .ub-rank {{ color: {c['FLARE']}; }}
 .ub-move {{ display: block; margin-top: 5px; font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0; color: {c['FOG']}; white-space: nowrap; }}
 .ub-move.up {{ color: {c['CHALK']}; }}
+@keyframes rowslide {{ from {{ transform: translateY(calc(var(--d) * (100% + 8px))); }} to {{ transform: none; }} }}
+.gradio-container .ub-row.moved {{ animation: rowslide .6s cubic-bezier(.2, .8, .2, 1); }}
 .ub-bed b {{ display: block; font-weight: 700; font-size: 19px; line-height: 1.2; }}
 .ub-bed span {{ color: {c['FOG']}; font-size: 14px; }}
 .ub-status {{ display: flex; align-items: center; gap: 8px; font-weight: 600; line-height: 1.25; }}

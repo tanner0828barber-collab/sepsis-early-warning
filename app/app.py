@@ -337,6 +337,13 @@ CSS += f"""
 .scoretile svg .nowdot {{ transform-box: fill-box; transform-origin: center; animation: hourpulse .5s ease-out; }}
 .scoretile h3 {{ animation: hourglow .6s ease-out; }}
 .playhint {{ font-size: 14px; color: {FOG}; margin: 0; text-align: right; padding-right: 6px; }}
+/* Play is the main control on both tabs: one accent color, a fixed width so nothing shifts when it turns into Pause, and a large hour readout. */
+.gradio-container .transport button.go.primary {{ background: {TIDE}; border-color: {TIDE}; color: {NIGHT}; min-height: 52px; min-width: 148px !important; padding: 0 22px; font-size: 18px; font-weight: 700; box-shadow: 0 6px 24px rgba(111,179,224,.28); }}
+.gradio-container .transport button.go.primary:hover {{ background: #8CC6EC; border-color: #8CC6EC; }}
+.gradio-container .transport button.go.secondary {{ min-height: 52px; }}
+.gradio-container .transport .hour input[type=number] {{ font-size: 24px; font-weight: 700; min-width: 84px; text-align: center; border-color: {TIDE}; font-variant-numeric: tabular-nums; }}
+.gradio-container .transport .hour label span, .gradio-container .transport .hour .head span {{ font-size: 15px; color: {CHALK}; }}
+.gradio-container .transport .hour input[type=range] {{ accent-color: {TIDE}; height: 8px; }}
 .slim {{ display: flex; flex-wrap: wrap; gap: 4px 26px; align-items: baseline; margin-top: 2px; font-size: 14.5px; color: {FOG}; }}
 .slim b {{ font-size: 19px; font-weight: 700; color: {CHALK}; margin-right: 4px; font-variant-numeric: tabular-nums; }}
 .slim .miss b {{ color: {AMBER}; }}
@@ -930,6 +937,8 @@ def travel_tab():
 
 
 # ---------------------------------------------------------------- the page
+# The two labels on the Play button. The comparisons below use these same names, so the words can change in one place.
+PLAY, PAUSE = "\u25b6\ufe0e  Play", "\u275a\u275a  Pause"
 LEAD_IN = 8   # hours; my own choice for this display
 
 
@@ -979,7 +988,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                         for case in CASES["cases"]
                     ]
                     gr.HTML('<p class="playhint">Play stops at the first alert and at sepsis onset.</p>', elem_classes="spacer")
-                    play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
+                    play = gr.Button(PLAY, variant="primary", elem_classes="go", scale=0, min_width=0)
                     step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 hour = gr.Slider(START_FIRST, START_LAST, value=START_AT, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
             timer = gr.Timer(0.7, active=False)
@@ -990,7 +999,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                 first, last = hours_of(pid)
                 at = opening_hour(pid)
                 chosen = [gr.Button(variant="primary" if case["pid"] == pid else "secondary") for case in CASES["cases"]]
-                return [pid, gr.Slider(minimum=first, maximum=last, value=at), show(pid, at), gr.Timer(active=False), "Play", *chosen]
+                return [pid, gr.Slider(minimum=first, maximum=last, value=at), show(pid, at), gr.Timer(active=False), PLAY, *chosen]
 
             for button, case in zip(pills, CASES["cases"]):
                 button.click(
@@ -1007,16 +1016,16 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
             def advance(pid, now):
                 """One hour forward: the new hour, the timer, the Play label, and the tiles at that hour."""
                 if not pid:
-                    return now, gr.Timer(active=False), "Play", show(pid, now)
+                    return now, gr.Timer(active=False), PLAY, show(pid, now)
                 first, last = hours_of(pid)
                 nxt = min(int(now) + 1, last)
                 if nxt >= last:
-                    return nxt, gr.Timer(active=False), "Play", show(pid, nxt)
+                    return nxt, gr.Timer(active=False), PLAY, show(pid, nxt)
                 # Play stops at the two hours worth looking at: the first alert, and sepsis onset. Play again goes on.
                 # Both are known at this hour: the alert from the score so far, onset because the replay has reached it.
                 at = moment(pid, nxt)
                 if nxt == at.first_alert or (at.sepsis and nxt == at.onset):
-                    return nxt, gr.Timer(active=False), "Play", show(pid, nxt)
+                    return nxt, gr.Timer(active=False), PLAY, show(pid, nxt)
                 return nxt, gr.Timer(), gr.Button(), show(pid, nxt)
 
             def step_once(pid, now):
@@ -1028,12 +1037,12 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
 
             def toggle(pid, label, now):
                 if not pid:
-                    return gr.Timer(active=False), "Play", now, show(pid, now)
-                if label == "Play":
+                    return gr.Timer(active=False), PLAY, now, show(pid, now)
+                if label == PLAY:
                     first, last = hours_of(pid)
                     restart = first if int(now) >= last else now   # at the end, Play starts over
-                    return gr.Timer(active=True), "Pause", restart, show(pid, restart)
-                return gr.Timer(active=False), "Play", now, show(pid, now)
+                    return gr.Timer(active=True), PAUSE, restart, show(pid, restart)
+                return gr.Timer(active=False), PLAY, now, show(pid, now)
 
             play.click(toggle, [current, play, hour], [timer, play, hour, board], show_progress="hidden")
 
@@ -1041,7 +1050,7 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
             with gr.Column(elem_classes="transport"):
                 with gr.Row(elem_classes="buttons"):
                     gr.HTML('<p class="playhint">Arrows show beds that moved since the hour before. Play stops when a bed first alerts.</p>', elem_classes="spacer")
-                    unit_play = gr.Button("Play", variant="primary", elem_classes="go", scale=0, min_width=0)
+                    unit_play = gr.Button(PLAY, variant="primary", elem_classes="go", scale=0, min_width=0)
                     unit_step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 unit_hour = gr.Slider(
                     unit_board.FIRST_HOUR, unit_board.LAST_HOUR, value=unit_board.START_HOUR, step=1,
@@ -1065,10 +1074,10 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                 """One hour forward on the board: the new hour, the timer, the Play label, and the board."""
                 nxt = min(int(now) + 1, unit_board.LAST_HOUR)
                 if nxt >= unit_board.LAST_HOUR:
-                    return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
+                    return nxt, gr.Timer(active=False), PLAY, unit_board.board(nxt)
                 # Play stops the hour a bed first alerts, so there is time to see which one. Play again goes on.
                 if any(bed.get("first_alert") == nxt for bed in unit_board.ranked(nxt)[0]):
-                    return nxt, gr.Timer(active=False), "Play", unit_board.board(nxt)
+                    return nxt, gr.Timer(active=False), PLAY, unit_board.board(nxt)
                 return nxt, gr.Timer(), gr.Button(), unit_board.board(nxt)
 
             def unit_step_once(now):
@@ -1079,10 +1088,10 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
             unit_timer.tick(unit_advance, unit_hour, [unit_hour, unit_timer, unit_play, unit_view], show_progress="hidden")
 
             def unit_toggle(label, now):
-                if label == "Play":
+                if label == PLAY:
                     restart = unit_board.FIRST_HOUR if int(now) >= unit_board.LAST_HOUR else now   # at the end, Play starts over
-                    return gr.Timer(active=True), "Pause", restart, unit_board.board(restart)
-                return gr.Timer(active=False), "Play", now, unit_board.board(now)
+                    return gr.Timer(active=True), PAUSE, restart, unit_board.board(restart)
+                return gr.Timer(active=False), PLAY, now, unit_board.board(now)
 
             unit_play.click(unit_toggle, [unit_play, unit_hour], [unit_timer, unit_play, unit_hour, unit_view], show_progress="hidden")
 
@@ -1092,8 +1101,8 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
             at = int(min(max(round(board_hour), first), last))
             plain = [gr.Button(variant="secondary") for _ in CASES["cases"]]
             return [
-                pid, gr.Slider(minimum=first, maximum=last, value=at), show(pid, at), gr.Timer(active=False), "Play", *plain,
-                gr.Timer(active=False), "Play", gr.Tabs(selected="replay"),
+                pid, gr.Slider(minimum=first, maximum=last, value=at), show(pid, at), gr.Timer(active=False), PLAY, *plain,
+                gr.Timer(active=False), PLAY, gr.Tabs(selected="replay"),
             ]
 
         for bed_pid, bed_button in bed_buttons.items():
