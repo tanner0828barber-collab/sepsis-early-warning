@@ -300,6 +300,28 @@ Version 1 above stays the result of record. Version 2 is "the best model I could
   - Rule for keeping (c) or LightGBM, set now: utility at least 0.01 higher at hospital A and at hospital B than Saturday's both-hospitals numbers at the 25% cap, and alerted by onset not more than 1.5 points lower at either. Saturday's keep rule (1.5 points more alerted by onset, utility not more than 0.01 lower) is reported next to it. Rules (a) and (b) have no keep rule: they change the operating point, and the cap is Tanner's call. The 25% cap stays the version 2 setting unless he changes it.
   - Leak check, set now: any utility above 0.45 is treated as a possible mistake and checked before it is reported.
   - Claude's guesses, logged in advance: (b) lands near a 40% to 45% cap with utility 0.42 to 0.44 at both hospitals and about 40% false alarms. (c) moves utility by 0.00 to plus 0.01 and does not meet the rule. LightGBM lands within 0.005 of scikit-learn at both tree counts and does not meet the rule. About a one in six chance that (c) or LightGBM passes.
+- Sun 11/15, 6:40 PM. RESULT of both tests (results/after_the_fact_v2_cutoff_policy_hgb.csv and _lgbm.csv, with every chosen cap and factor in the .json files). After-the-fact. Both-hospitals model, nested, each hospital's own cutoff. Checks that passed: the repeat run's scores match Saturday's saved scores exactly (largest gap 0.0), the 25% cap reproduces Saturday's result exactly, and the fast copy of the utility used to choose rules matches the organizers' function. Every number below is from the organizers' function. Nothing is above the 0.45 leak line. 23 tests pass.
+
+  | Rule (scikit-learn model) | A utility | A timely | A by onset | A missed | A false alarms | B utility | B timely | B by onset | B missed | B false alarms |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | 25% cap (Saturday's version 2) | 0.402 | 295 of 1,432 | 72.1% | 399 | 3,766 of 14,836 (25.4%) | 0.406 | 364 of 1,142 | 80.7% | 220 | 4,755 of 18,858 (25.2%) |
+  | 30% cap | 0.412 | 316 | 76.7% | 333 | 4,514 (30.4%) | 0.404 | 362 | 84.7% | 175 | 5,915 (31.4%) |
+  | 35% cap | 0.420 | 344 | 81.8% | 261 | 5,274 (35.5%) | 0.396 | 357 | 87.3% | 145 | 6,791 (36.0%) |
+  | 40% cap | 0.422 | 359 | 85.3% | 210 | 5,996 (40.4%) | 0.387 | 363 | 89.3% | 122 | 7,661 (40.6%) |
+  | 50% cap | 0.415 | 367 | 89.9% | 145 | 7,444 (50.2%) | 0.352 | 368 | 93.8% | 71 | 9,660 (51.2%) |
+  | (b) Cutoff that maximizes utility, no cap | 0.422 | 365 | 88.1% | 170 | 6,737 (45.4%) | 0.407 | 359 | 80.8% | 219 | 4,896 (26.0%) |
+  | (c) Time bands at the 25% cap | 0.396 | 281 | 69.6% | 436 | 3,716 (25.0%) | 0.402 | 360 | 80.5% | 223 | 4,776 (25.3%) |
+
+  | LightGBM at the 25% cap | A utility | A timely | A by onset | A missed | B utility | B timely | B by onset | B missed |
+  |---|---|---|---|---|---|---|---|---|
+  | 200 trees | 0.400 | 312 | 72.6% | 392 | 0.406 | 360 | 80.5% | 223 |
+  | 400 trees | 0.397 | 304 | 72.9% | 388 | 0.406 | 352 | 80.6% | 221 |
+
+  - (b) The caps chosen on the inner folds were 47.5%, 45% and 42.5% at hospital A and 27.5%, 25% and 25% at hospital B. So at hospital B the 25% cap is already at the top of the utility curve, and the utility-maximizing cutoff changes nothing there (0.406 to 0.407). At hospital A it moves utility from 0.402 to 0.422 and missed patients from 399 to 170, and the price is false alarms on 45.4% of patients without sepsis in place of 25.4%: 5.3 false alarms per alerted sepsis patient and 652 alerts per 1,000 patient-days against 366.
+  - (c) Time bands: worse at both hospitals (0.396 and 0.402). Rule not met. The factors chosen on the inner folds did not hold up on the outer folds.
+  - LightGBM: a tie. Utility is 0.002 and 0.005 lower at hospital A and the same at hospital B. Tonight's rule is not met and Saturday's keep rule is not met (alerted by onset moved by plus 0.5 and plus 0.8 points at A, minus 0.2 and minus 0.1 at B). With its own utility-maximizing cutoff LightGBM reaches 0.420 at A and 0.406 to 0.408 at B, the same as scikit-learn. LightGBM is not in requirements.txt and nothing in the notebook or app uses it.
+  - Guess against result. (b): right at hospital A (guessed 0.42 to 0.44 near a 40% to 45% cap, got 0.422 at about 45%), wrong at hospital B (got 0.407 at about 26%, because B's curve peaks much lower than A's). (c): guessed 0.00 to plus 0.01, got minus 0.006 and minus 0.004. LightGBM: guessed within 0.005, got that. Nothing passed, as guessed.
+  - What it means: two different libraries, two tree counts, and three ways of setting the cutoff all land at 0.40 to 0.42. That is the ceiling of what these inputs can rank, not a setting that is off. The one real choice is the cap at hospital A: 0.422 is available there for anyone willing to alert on 45% of patients who never develop sepsis. Hospital B has nothing to gain from a higher cap. The version 2 setting stays the 25% cap unless Tanner changes it.
 
 ## Why no new outside data
 
