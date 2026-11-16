@@ -163,6 +163,7 @@ The data is not stored in this repository. The notebook downloads it from the pu
 
 - Retrospective. No nurse has used it, and nobody has acted on one of its alerts.
 - Two hospitals from one public dataset. A third hospital was not tested.
+- **I hit a ceiling and say so.** In the 48 hours I tested more than 20 changes to the model, and none moved the score past about 0.40 to 0.42. I looked for more hospitals to train and test on. The other intensive care datasets with a sepsis outcome (MIMIC, eICU, HiRID, AmsterdamUMCdb) need a credentialed application that takes days, and the brief asks for public data only, so I could not use them this weekend. More data from more hospitals is the next step, not more tuning.
 - The sepsis label is built partly from when staff ordered antibiotics and cultures, so the model partly learns hospital habits.
 - Records stop a few hours after sepsis onset.
 
