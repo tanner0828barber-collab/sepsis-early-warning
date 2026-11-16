@@ -116,7 +116,7 @@
         "12,630 of 18,858 (67.0%)"
       ],
       [
-        "T0: hours in the unit only",
+        "Clock only: hours in the unit (T0)",
         "0.312",
         "0.242",
         "79",
@@ -125,7 +125,7 @@
         "2,581 of 18,858 (13.7%)"
       ],
       [
-        "M1: body signals and trends",
+        "Body signals and trends only (M1)",
         "0.197",
         "0.091",
         "103",
@@ -134,7 +134,7 @@
         "994 of 18,858 (5.3%)"
       ],
       [
-        "M2: M1 plus time",
+        "Body signals plus the clock (M2)",
         "0.367",
         "0.247",
         "111",
@@ -143,7 +143,7 @@
         "1,452 of 18,858 (7.7%)"
       ],
       [
-        "M3: M2 plus measurement signals (the full model)",
+        "Full model: adds when each value was measured (M3)",
         "0.368",
         "0.238",
         "109",
@@ -175,7 +175,7 @@
         "1,358 of 18,858 (7.2%)"
       ],
       [
-        "Label-free adjustment: alert on the same share of all patients as at A dev",
+        "No sepsis labels used: alert on the same share of all patients as at A dev",
         "0.368",
         "0.270",
         "171",
@@ -184,7 +184,7 @@
         "3,229 of 18,858 (17.1%)"
       ],
       [
-        "Label-free adjustment: values rescaled by each hospital's own average and spread",
+        "No sepsis labels used: values rescaled by each hospital's own average and spread",
         "0.368",
         "0.246",
         "118",

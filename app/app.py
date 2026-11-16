@@ -321,6 +321,12 @@ CSS += f"""
 .dotkey b {{ font-variant-numeric: tabular-nums; }}
 .dots .caption {{ margin-top: 14px; max-width: 110ch; }}
 @media (max-width: 700px) {{ .strip {{ grid-template-columns: 1fr; }} .strip b {{ font-size: 24px; }} }}
+.state .word.long {{ font-size: clamp(38px, 4.5vw, 56px); }}
+details.more {{ margin: 8px 2px 0; }}
+details.more summary {{ cursor: pointer; color: {FOG}; font-size: 14px; font-weight: 600; width: fit-content; border-radius: 6px; }}
+details.more summary:hover {{ color: {CHALK}; }}
+details.more summary:focus-visible {{ outline: 3px solid {TIDE}; outline-offset: 2px; }}
+details.more .source, details.more .caption {{ margin-top: 6px; }}
 """
 
 # The page is drawn dark whatever the visitor's system setting is.
@@ -440,10 +446,13 @@ def state_tile(m, label):
         else:
             text = [f"First fired at hour {m.first_alert}."]
         if m.now_relative < 1:
+            # The alert stays up once it has fired, but the score tile below now reads under the line.
+            # The past tense keeps the two tiles from looking like they disagree.
+            word = "Alerted"
             text.append("The score is back under the alert line now.")
     return (
         f'<section class="tile state {kind}"><div class="corner"><span>{label}</span><span>Hour {m.hour} of {m.last}</span></div>'
-        f'<div role="status"><div class="word display">{shape(kind)}<span>{word}</span></div>'
+        f'<div role="status"><div class="word display{" long" if len(word) > 6 else ""}">{shape(kind)}<span>{word}</span></div>'
         f'<p class="lead">{lead}</p>{"".join(f"<p>{t}</p>" for t in text)}</div></section>'
     )
 
@@ -679,12 +688,13 @@ def show(pid, hour):
     return (
         f'<div class="grid12">{state_tile(m, LABELS[pid])}{vitals}{score_tile(m)}{happened_tile(m)}{proof_tile()}{inputs_tile(m)}</div>'
         f'<p class="source">Source: PhysioNet / Computing in Cardiology Challenge 2019, {SITE}, one public de-identified record. '
+        "Retrospective replay of a saved record, not a live monitor. Nothing you do here is stored. "
+        "This project is a prototype and is not medical advice.</p>"
+        '<details class="more"><summary>How to read the charts</summary><p class="source">'
         "In the four small charts a dot is a real measurement, a ring at the edge is a measurement off the scale, the line carries the "
         "last one forward, and the gray strips are where the "
         "NEWS2 bedside chart (Royal College of Physicians, 2017, made for general wards) gives 1, 2 or 3 points. The model does not use NEWS2. "
-        f'"Near the line" means {unit_board.NEAR:g} of the alert line or more, my own choice for this display. '
-        "Retrospective replay of a saved record, not a live monitor. Nothing you do here is stored. "
-        "This project is a prototype and is not medical advice.</p>"
+        f'"Near the line" means {unit_board.NEAR:g} of the alert line or more, my own choice for this display.</p></details>'
     )
 
 
@@ -909,7 +919,10 @@ with gr.Blocks(css=CSS, js=FORCE_DARK, head=FONTS, theme=gr.themes.Base(), analy
                     step = gr.Button("Step one hour", elem_classes="go", scale=0, min_width=0)
                 hour = gr.Slider(START_FIRST, START_LAST, value=START_AT, step=1, label="Hour in the unit", interactive=True, elem_classes="hour")
                 rules = "; ".join(f'"{c["label"]}" is {c["rule"]}' for c in CASES["cases"])
-                gr.HTML(f'<p class="caption">Four saved patients from {SITE}. Chosen by rule, not by eye: {rules}.</p>')
+                gr.HTML(
+                    f'<p class="caption">Four saved patients from {SITE}, chosen by rule, not by eye.</p>'
+                    f'<details class="more"><summary>How they were chosen</summary><p class="caption">{rules}.</p></details>'
+                )
             timer = gr.Timer(0.7, active=False)
 
             board = gr.HTML(show(START, START_AT))

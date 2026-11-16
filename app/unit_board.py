@@ -243,7 +243,11 @@ def board(hour):
         f'<div class="headline display">Who to look at first</div><p class="finding">{lead}</p></section>'
         '<section class="tile wide12"><div class="ub-head" aria-hidden="true"><span></span><span>Bed</span><span>Alert</span>'
         f'<span>How close to an alert</span><span>Latest vital signs</span><span>What happened</span></div>{listing}</section>{gone}</div>'
-        f'<p class="source">A made-up unit. These are {len(PATIENTS)} real, public, de-identified records from the PhysioNet / Computing in '
+        f'<p class="source">A made-up unit: {len(PATIENTS)} real, public, de-identified {UNIT["site"][0].lower() + UNIT["site"][1:]} records, '
+        f'lined up by hour in the unit. {UNIT["with_sepsis"]} of the {len(PATIENTS)} develop sepsis, against about 1 in {share} at the hospital, '
+        "on purpose. Retrospective replay of saved records, not a live monitor. This project is a prototype and is not medical advice.</p>"
+        '<details class="more"><summary>How this board was built</summary>'
+        f'<p class="source">These are {len(PATIENTS)} real, public, de-identified records from the PhysioNet / Computing in '
         f'Cardiology Challenge 2019, {UNIT["site"][0].lower() + UNIT["site"][1:]}, picked by rule and not by eye: {UNIT["rule"]}. '
         "They were not in the unit together. The board lines their records up by hour in the unit, and the bed numbers are made up. "
         f'{UNIT["with_sepsis"]} of the {len(PATIENTS)} develop sepsis. At this hospital it was {UNIT["hospital_sepsis_patients"]:,} of '
@@ -251,8 +255,7 @@ def board(hour):
         f'"Near the line" means {NEAR:g} of the alert line or more. That level is my own choice for this display, and so is marking a vital sign '
         f"older than {STALE_AFTER} hours. HR is heart rate in beats per minute, Temp is temperature in °C, Resp is breathing rate in breaths per "
         "minute, and SBP is systolic blood pressure in mm Hg. What happened to each patient shows only when the board reaches it. The model "
-        "never sees it. The score is the model's output divided by the frozen alert cutoff, not a probability. "
-        "Retrospective replay of saved records, not a live monitor. This project is a prototype and is not medical advice.</p>"
+        "never sees it. The score is the model's output divided by the frozen alert cutoff, not a probability.</p></details>"
     )
 
 

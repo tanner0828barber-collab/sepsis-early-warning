@@ -139,10 +139,10 @@ if b is not None:
 names = [
     ("Never alert", "Never alert"),
     ("Modified SIRS", "Modified SIRS rule (two or more of four checks)"),
-    ("T0", "T0: hours in the unit only"),
-    ("M1", "M1: body signals and trends"),
-    ("M2", "M2: M1 plus time"),
-    ("M3", "M3: M2 plus measurement signals (the full model)"),
+    ("T0", "Clock only: hours in the unit (T0)"),
+    ("M1", "Body signals and trends only (M1)"),
+    ("M2", "Body signals plus the clock (M2)"),
+    ("M3", "Full model: adds when each value was measured (M3)"),
 ]
 
 
@@ -178,8 +178,8 @@ else:
     }
     attempts = [
         ("M3", "Main result: frozen score cutoff from hospital A"),
-        ("M3, same share of patients alerted", "Label-free adjustment: alert on the same share of all patients as at A dev"),
-        ("M3 rescaled", "Label-free adjustment: values rescaled by each hospital's own average and spread"),
+        ("M3, same share of patients alerted", "No sepsis labels used: alert on the same share of all patients as at A dev"),
+        ("M3 rescaled", "No sepsis labels used: values rescaled by each hospital's own average and spread"),
     ]
     out["travel_attempts"] = {
         "columns": ["Attempt", "Utility at A dev (calibration set)", "Utility at B", "Timely at B", "Alerted by onset at B", "Missed at B", "False alarms at B"],
